@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Repeat, HelpCircle, Sparkles } from 'lucide-react';
+import { ShoppingCart, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { MenuItem } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
@@ -77,21 +77,6 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
                 className="w-full bg-[#1a1a1a] text-white rounded-2xl pl-12 pr-4 py-3.5 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
               />
             </div>
-          </div>
-
-          <div className="px-5 pb-4 space-y-3">
-            <button className="w-full flex items-center gap-3 text-left py-3 hover:bg-[#1a1a1a] rounded-xl px-3 transition-colors">
-              <Repeat className="w-5 h-5" />
-              <span>Repeat last order</span>
-            </button>
-            <button className="w-full flex items-center gap-3 text-left py-3 hover:bg-[#1a1a1a] rounded-xl px-3 transition-colors">
-              <HelpCircle className="w-5 h-5" />
-              <span>Help me choose</span>
-            </button>
-            <button className="w-full flex items-center gap-3 text-left py-3 hover:bg-[#1a1a1a] rounded-xl px-3 transition-colors">
-              <Sparkles className="w-5 h-5" />
-              <span>Surprise me</span>
-            </button>
           </div>
         </header>
 
