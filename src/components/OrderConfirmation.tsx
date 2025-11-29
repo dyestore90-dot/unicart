@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, Copy } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import type { OrderBatch } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
 
 interface OrderConfirmationProps {
@@ -8,14 +10,39 @@ interface OrderConfirmationProps {
 }
 
 export function OrderConfirmation({ orderId, onNavigate }: OrderConfirmationProps) {
+  const [batch, setBatch] = useState<OrderBatch | null>(null);
   const { clearCart } = useCart();
 
   useEffect(() => {
     clearCart();
+    loadBatchInfo();
   }, []);
+
+  const loadBatchInfo = async () => {
+    try {
+      const { data: order } = await supabase
+        .from('orders')
+        .select('batch_id')
+        .eq('id', orderId)
+        .maybeSingle();
+
+      if (order?.batch_id) {
+        const { data } = await supabase
+          .from('order_batches')
+          .select('*')
+          .eq('id', order.batch_id)
+          .maybeSingle();
+
+        if (data) setBatch(data);
+      }
+    } catch (error) {
+      console.error('Error loading batch:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center px-5">
+      {/* Mobile-width container */}
       <div className="max-w-md w-full text-center">
         <div className="mb-6 flex justify-center">
           <div className="w-20 h-20 bg-[#c4ff00] rounded-full flex items-center justify-center">
@@ -25,17 +52,21 @@ export function OrderConfirmation({ orderId, onNavigate }: OrderConfirmationProp
 
         <h1 className="text-3xl font-bold mb-3">Order Placed!</h1>
         <p className="text-gray-400 mb-8">
-          Your order has been successfully placed.
+          Your order has been successfully placed
         </p>
 
-        {/* Short Order ID Display */}
-        <div className="bg-[#1a1a1a] rounded-2xl p-6 mb-8 border border-gray-800">
-          <p className="text-sm text-gray-400 mb-2">Your Order ID</p>
-          <div className="text-3xl font-mono font-bold text-[#c4ff00] tracking-wider mb-2">
-            {orderId}
-          </div>
-          <p className="text-xs text-gray-500">
-            Show this ID at the College Campus Gate to collect your food.
+        {/* ORDER ID DISPLAY */}
+        <div className="bg-[#1a1a1a] border border-[#c4ff00]/30 rounded-2xl p-6 mb-6">
+          <p className="text-sm text-gray-400 mb-1">Your Order ID</p>
+          <p className="text-2xl font-mono font-bold text-[#c4ff00] tracking-wider">{orderId}</p>
+          <p className="text-xs text-gray-500 mt-2">Show this ID at the collection point</p>
+        </div>
+
+        <div className="bg-[#1a1a1a] rounded-2xl p-6 mb-8">
+          <p className="text-sm text-gray-400 mb-2">Delivery Slot</p>
+          <p className="text-xl font-semibold mb-4">{batch?.slot_label || 'Loading...'}</p>
+          <p className="text-sm text-gray-400">
+            All orders in this slot will be delivered together
           </p>
         </div>
 
