@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { ArrowLeft, Plus, Minus, Trash2 } from 'lucide-react';
 import { useUser, SignedIn, SignedOut, SignInButton } from '@clerk/clerk-react';
 import { useCart } from '../contexts/CartContext';
-import { supabase } from '../lib/supabase';
 
 interface CartProps {
   onNavigate: (screen: string, orderId?: string) => void;
@@ -16,10 +15,20 @@ export function Cart({ onNavigate }: CartProps) {
   // State for manual phone input (if Clerk doesn't have it)
   const [manualPhone, setManualPhone] = useState('');
 
-  // 1. Get the best available phone number
-  // If Clerk has it, use it. Otherwise, use what the user typed.
+  // 1. Get Phone Number (Clerk > Manual)
   const verifiedPhone = user?.primaryPhoneNumber?.phoneNumber;
   const finalPhoneNumber = verifiedPhone || manualPhone;
+
+  // --- NEW SAFER ID GENERATOR ---
+  const generateUniqueId = () => {
+    // 1. Get the last 4 digits of the current timestamp (changes every ms)
+    const timeComponent = Date.now().toString().slice(-4);
+    // 2. Get 2 random uppercase letters/numbers
+    const randomComponent = Math.random().toString(36).substr(2, 2).toUpperCase();
+    
+    // Result: "ORD-9382-X7" (Unique + Time-based)
+    return `ORD-${timeComponent}-${randomComponent}`;
+  };
 
   const handlePlaceOrder = async () => {
     if (cart.length === 0) {
@@ -27,22 +36,19 @@ export function Cart({ onNavigate }: CartProps) {
       return;
     }
 
-    // 2. Validate Phone Number
     if (!finalPhoneNumber) {
-      alert('Please enter your phone number so we can contact you for delivery.');
+      alert('Please enter your phone number so we can contact you.');
       return;
     }
 
     setLoading(true);
 
-    // 3. Generate a Unique Short Order ID
-    // Creates an ID like: "ORD-7X2M"
-    const shortOrderId = 'ORD-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+    // 2. Generate the ID using the new function
+    const uniqueOrderId = generateUniqueId();
 
-    // Simulate API call (since we removed the DB connection)
+    // Simulate API call
     setTimeout(() => {
-      // Navigate to confirmation with the new Short ID
-      onNavigate('confirmation', shortOrderId);
+      onNavigate('confirmation', uniqueOrderId);
       setLoading(false);
     }, 1500);
   };
@@ -112,9 +118,9 @@ export function Cart({ onNavigate }: CartProps) {
 
           <SignedIn>
             <div className="bg-[#1a1a1a] rounded-2xl p-5 mb-8">
-              <h2 className="font-semibold mb-4">Delivery Details</h2>
+              <h2 className="font-semibold mb-4 text-[#c4ff00]">Delivery Details</h2>
               <div className="space-y-4">
-                {/* Name Field */}
+                {/* Name */}
                 <div>
                   <label className="text-xs text-gray-400 mb-1 block">Name</label>
                   <div className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 text-gray-300">
@@ -122,17 +128,15 @@ export function Cart({ onNavigate }: CartProps) {
                   </div>
                 </div>
 
-                {/* Phone Field - Conditional Input */}
+                {/* Phone Input (Manual or Verified) */}
                 <div>
                   <label className="text-xs text-gray-400 mb-1 block">Phone Number *</label>
                   {verifiedPhone ? (
-                    // Case A: Clerk has the phone number (Display it)
                     <div className="w-full bg-[#252525] text-[#c4ff00] rounded-xl px-4 py-3 font-semibold flex justify-between items-center">
                       {verifiedPhone}
                       <span className="text-xs bg-[#c4ff00]/20 px-2 py-1 rounded">Verified</span>
                     </div>
                   ) : (
-                    // Case B: No verified phone (Show Input)
                     <input 
                       type="tel" 
                       placeholder="Enter your mobile number"
@@ -143,14 +147,18 @@ export function Cart({ onNavigate }: CartProps) {
                   )}
                 </div>
 
+                {/* Address */}
                 <div>
                   <label className="text-xs text-gray-400 mb-1 block">Delivery Address</label>
                   <div className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 text-gray-300">
                     SSN CAMPUS IIIT ONGOLE
                   </div>
                 </div>
-                <div className="bg-[#c4ff00]/10 border border-[#c4ff00]/30 rounded-xl px-4 py-3">
-                  <p className="text-sm text-[#c4ff00] font-semibold">Collection Point: College Campus Gate</p>
+                
+                {/* Collection Point */}
+                <div className="bg-[#2a2a2a] border border-[#c4ff00]/30 rounded-xl px-4 py-3 flex items-center gap-3">
+                  <span className="text-lg">📍</span>
+                  <p className="text-sm text-gray-300"><strong>Collection Point:</strong> College Campus Gate</p>
                 </div>
               </div>
             </div>
