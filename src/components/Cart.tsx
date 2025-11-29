@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Minus, Trash2 } from 'lucide-react';
+import { useUser, SignedIn, SignedOut, SignInButton } from '@clerk/clerk-react';
 import { useCart } from '../contexts/CartContext';
 import { supabase } from '../lib/supabase';
 
@@ -9,20 +10,22 @@ interface CartProps {
 
 export function Cart({ onNavigate }: CartProps) {
   const { cart, updateQuantity, removeFromCart, totalAmount } = useCart();
-  const [name, setName] = useState('');
-  const [hostel, setHostel] = useState('');
-  const [room, setRoom] = useState('');
-  const [phone, setPhone] = useState('');
+  const { user } = useUser();
   const [loading, setLoading] = useState(false);
 
+  const name = user?.fullName || user?.firstName || '';
+  const phone = user?.primaryPhoneNumber?.phoneNumber || '';
+  const deliveryAddress = 'SSN CAMPUS IIIT ONGOLE';
+  const collectionPoint = 'College Campus Gate';
+
   const handlePlaceOrder = async () => {
-    if (!name || !hostel || !room || !phone) {
-      alert('Please fill all details');
+    if (cart.length === 0) {
+      alert('Your cart is empty');
       return;
     }
 
-    if (cart.length === 0) {
-      alert('Your cart is empty');
+    if (!name || !phone) {
+      alert('Please ensure your profile has your name and phone number');
       return;
     }
 
@@ -46,8 +49,8 @@ export function Cart({ onNavigate }: CartProps) {
         .insert({
           batch_id: batch.id,
           user_name: name,
-          hostel,
-          room,
+          hostel: deliveryAddress,
+          room: collectionPoint,
           phone,
           items: cart,
           total_amount: totalAmount,
@@ -146,40 +149,48 @@ export function Cart({ onNavigate }: CartProps) {
             ))}
           </div>
 
-          <div className="bg-[#1a1a1a] rounded-2xl p-5 mb-8">
-            <h2 className="font-semibold mb-4">Delivery Details</h2>
-
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Your Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
-              />
-              <input
-                type="text"
-                placeholder="Hostel / Block"
-                value={hostel}
-                onChange={(e) => setHostel(e.target.value)}
-                className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
-              />
-              <input
-                type="text"
-                placeholder="Room Number"
-                value={room}
-                onChange={(e) => setRoom(e.target.value)}
-                className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
-              />
-              <input
-                type="tel"
-                placeholder="Phone Number"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
-              />
+          <SignedOut>
+            <div className="bg-[#1a1a1a] rounded-2xl p-8 mb-8 text-center">
+              <div className="text-5xl mb-4">🔐</div>
+              <h2 className="text-xl font-bold mb-2">Sign in to place your order</h2>
+              <p className="text-gray-400 mb-6">You need to be logged in to complete your purchase</p>
+              <SignInButton mode="modal">
+                <button className="bg-[#c4ff00] text-black font-semibold px-8 py-4 rounded-xl hover:bg-[#b3e600] transition-all transform hover:scale-[1.02]">
+                  Sign In to Continue
+                </button>
+              </SignInButton>
             </div>
-          </div>
+          </SignedOut>
+
+          <SignedIn>
+            <div className="bg-[#1a1a1a] rounded-2xl p-5 mb-8">
+              <h2 className="font-semibold mb-4">Delivery Details</h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Name</label>
+                  <div className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 text-gray-300">
+                    {name || 'Not provided'}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Phone Number</label>
+                  <div className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 text-gray-300">
+                    {phone || 'Not provided'}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Delivery Address</label>
+                  <div className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 text-gray-300">
+                    {deliveryAddress}
+                  </div>
+                </div>
+                <div className="bg-[#c4ff00]/10 border border-[#c4ff00]/30 rounded-xl px-4 py-3">
+                  <p className="text-sm text-[#c4ff00] font-semibold">Collection Point: {collectionPoint}</p>
+                </div>
+              </div>
+            </div>
+          </SignedIn>
 
           <div className="bg-[#1a1a1a] rounded-2xl p-5 mb-6">
             <div className="flex items-center justify-between mb-2">
@@ -202,13 +213,15 @@ export function Cart({ onNavigate }: CartProps) {
             </p>
           </div>
 
-          <button
-            onClick={handlePlaceOrder}
-            disabled={loading}
-            className="w-full bg-[#c4ff00] text-black font-semibold py-4 rounded-2xl hover:bg-[#b3e600] transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Placing Order...' : 'Place Order'}
-          </button>
+          <SignedIn>
+            <button
+              onClick={handlePlaceOrder}
+              disabled={loading}
+              className="w-full bg-[#c4ff00] text-black font-semibold py-4 rounded-2xl hover:bg-[#b3e600] transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Placing Order...' : 'Place Order'}
+            </button>
+          </SignedIn>
         </div>
       </div>
     </div>

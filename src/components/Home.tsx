@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Search } from 'lucide-react';
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 import type { MenuItem } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
 import { MenuItemCard } from './MenuItemCard';
@@ -49,17 +50,29 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
           <div className="px-5 py-4">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold">Unicart</h1>
-              <button
-                onClick={() => onNavigate('cart')}
-                className="relative bg-[#c4ff00] text-black w-12 h-12 rounded-2xl flex items-center justify-center font-semibold"
-              >
-                <ShoppingCart className="w-5 h-5" />
-                {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-black text-[#c4ff00] text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                    {totalItems}
-                  </span>
-                )}
-              </button>
+              <div className="flex items-center gap-3">
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <button className="bg-[#1a1a1a] text-white px-4 py-2 rounded-xl font-semibold hover:bg-[#252525] transition-colors">
+                      Sign In
+                    </button>
+                  </SignInButton>
+                </SignedOut>
+                <SignedIn>
+                  <UserButton afterSignOutUrl="/" />
+                </SignedIn>
+                <button
+                  onClick={() => onNavigate('cart')}
+                  className="relative bg-[#c4ff00] text-black w-12 h-12 rounded-2xl flex items-center justify-center font-semibold"
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  {totalItems > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-black text-[#c4ff00] text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                      {totalItems}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
