@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Search } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import type { MenuItem } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
 import { MenuItemCard } from './MenuItemCard';
@@ -16,6 +15,15 @@ const categoryIcons: Record<string, string> = {
   Drinks: '🥤',
 };
 
+// DATA IS HERE NOW
+const MOCK_MENU_ITEMS: MenuItem[] = [
+  { id: '1', name: 'Chicken Biryani', price: 180, category: 'Biryani', description: 'Aromatic basmati rice', image_url: '', is_available: true, is_recommended: true, created_at: '' },
+  { id: '2', name: 'Veg Hakka Noodles', price: 120, category: 'Chinese', description: 'Stir-fried noodles', image_url: '', is_available: true, is_recommended: false, created_at: '' },
+  { id: '3', name: 'Paneer Butter Masala', price: 160, category: 'Biryani', description: 'Rich creamy curry', image_url: '', is_available: true, is_recommended: true, created_at: '' },
+  { id: '4', name: 'Cold Coffee', price: 60, category: 'Drinks', description: 'Chilled creamy coffee', image_url: '', is_available: true, is_recommended: false, created_at: '' },
+  { id: '5', name: 'French Fries', price: 90, category: 'Snacks', description: 'Crispy salted fries', image_url: '', is_available: true, is_recommended: false, created_at: '' }
+];
+
 export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -23,25 +31,10 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
   const { totalItems } = useCart();
 
   useEffect(() => {
-    loadMenuItems();
+    // Immediate load
+    setMenuItems(MOCK_MENU_ITEMS);
+    setLoading(false);
   }, []);
-
-  const loadMenuItems = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('is_available', true)
-        .order('is_recommended', { ascending: false });
-
-      if (error) throw error;
-      setMenuItems(data || []);
-    } catch (error) {
-      console.error('Error loading menu:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredItems = selectedCategory === 'All'
     ? menuItems
@@ -68,7 +61,6 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
                 )}
               </button>
             </div>
-
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
@@ -85,11 +77,8 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
         <div className="px-5 py-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Top Categories</h2>
-            <button className="text-sm text-gray-400 flex items-center gap-1">
-              View all →
-            </button>
+            <button className="text-sm text-gray-400 flex items-center gap-1">View all →</button>
           </div>
-
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {categories.map((category) => (
               <button
@@ -112,11 +101,8 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
           <div className="px-5 pb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Recommended for you</h2>
-              <button className="text-sm text-gray-400 flex items-center gap-1">
-                View all →
-              </button>
+              <button className="text-sm text-gray-400 flex items-center gap-1">View all →</button>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               {recommendedItems.slice(0, 4).map((item) => (
                 <MenuItemCard key={item.id} item={item} />
@@ -129,7 +115,6 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
           <h2 className="text-lg font-semibold mb-4">
             {selectedCategory === 'All' ? 'All Items' : selectedCategory}
           </h2>
-
           {loading ? (
             <div className="text-center py-12 text-gray-400">Loading menu...</div>
           ) : filteredItems.length === 0 ? (
@@ -143,7 +128,6 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
           )}
         </div>
       </div>
-
       <FloatingCartBar onNavigate={onNavigate} />
     </div>
   );
