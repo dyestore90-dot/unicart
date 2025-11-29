@@ -15,18 +15,15 @@ function App() {
     if (id) setOrderId(id);
   };
 
-  const isAdminRoute = window.location.pathname === '/admin';
-
-  if (isAdminRoute) {
-    return <Admin />;
-  }
-
   return (
     <CartProvider>
       {screen === 'home' && <Home onNavigate={navigate} />}
       {screen === 'cart' && <Cart onNavigate={navigate} />}
       {screen === 'confirmation' && <OrderConfirmation orderId={orderId} onNavigate={navigate} />}
       {screen === 'tracking' && <OrderTracking onNavigate={navigate} />}
+      
+      {/* Admin Screen is only shown if navigated to explicitly via the Home component */}
+      {screen === 'admin' && <Admin />}
     </CartProvider>
   );
 }
