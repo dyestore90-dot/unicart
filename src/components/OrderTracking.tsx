@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Package, ChefHat, Bike, CheckCircle, Clock, ChevronRight } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { supabase } from '../lib/supabase';
+import { useUser } from '@clerk/clerk-react'; // Added useUser import
 
 interface OrderTrackingProps {
   onNavigate: (screen: string) => void;
@@ -17,8 +18,8 @@ const steps = [
 
 export function OrderTracking({ onNavigate }: OrderTrackingProps) {
   const { recentOrderIds } = useCart();
+  const { user } = useUser(); // Get current user
   
-  // State to manage list vs single view
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   
   // Data for single view
@@ -27,17 +28,19 @@ export function OrderTracking({ onNavigate }: OrderTrackingProps) {
   const [orderAmount, setOrderAmount] = useState(0);
   const [itemCount, setItemCount] = useState(0);
 
-  // Data for list view (summary of all orders)
+  // Data for list view
   const [ordersSummary, setOrdersSummary] = useState<any[]>([]);
+  const [loadingList, setLoadingList] = useState(true);
 
-  // If there is only one order, select it automatically
+  // Initial Load: Check if we should auto-select an order
   useEffect(() => {
-    if (recentOrderIds.length === 1) {
+    // If guest and only 1 local order, select it immediately
+    if (!user && recentOrderIds.length === 1) {
       setSelectedOrderId(recentOrderIds[0]);
-    } else {
-      fetchAllOrdersSummary();
-    }
-  }, [recentOrderIds]);
+    } 
+    // Always fetch the list to show history
+    fetchAllOrdersSummary();
+  }, [recentOrderIds, user]);
 
   // Poll for updates on the SELECTED order
   useEffect(() => {
@@ -48,21 +51,42 @@ export function OrderTracking({ onNavigate }: OrderTrackingProps) {
     }
   }, [selectedOrderId]);
 
-  // Fetch summary for list view
+  // --- NEW: Fetch History from DB ---
   const fetchAllOrdersSummary = async () => {
-    if (recentOrderIds.length === 0) return;
-
+    setLoadingList(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select('id, total_amount, created_at, items')
-        .in('id', recentOrderIds)
         .order('created_at', { ascending: false });
 
+      if (user) {
+        // Logged In: Fetch orders matching User ID OR Local IDs (merge history)
+        const localIdsStr = recentOrderIds.length > 0 ? recentOrderIds.join(',') : '00000000-0000-0000-0000-000000000000'; // Dummy UUID if empty
+        // Using 'or' to combine conditions is complex in string format, easier to just filter by user_id if logged in
+        // Ideally, we sync local IDs to user_id upon login, but for now, let's just show user_id matches
+        // To be safe and show everything:
+        if (recentOrderIds.length > 0) {
+             query = query.or(`user_id.eq.${user.id},id.in.(${localIdsStr})`);
+        } else {
+             query = query.eq('user_id', user.id);
+        }
+      } else if (recentOrderIds.length > 0) {
+        // Guest: Only fetch local IDs
+        query = query.in('id', recentOrderIds);
+      } else {
+        setOrdersSummary([]);
+        setLoadingList(false);
+        return;
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       setOrdersSummary(data || []);
     } catch (err) {
       console.error("Error fetching summaries:", err);
+    } finally {
+      setLoadingList(false);
     }
   };
 
@@ -104,7 +128,7 @@ export function OrderTracking({ onNavigate }: OrderTrackingProps) {
   };
 
   // --- RENDER: EMPTY STATE ---
-  if (recentOrderIds.length === 0) {
+  if (!loadingList && ordersSummary.length === 0) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-5 text-center">
         <div>
@@ -128,28 +152,35 @@ export function OrderTracking({ onNavigate }: OrderTrackingProps) {
           
           <h1 className="text-2xl font-bold mb-6">Your Orders</h1>
 
-          <div className="space-y-4">
-            {ordersSummary.map((order) => {
-              const items = order.items as any[];
-              const firstItemName = items[0]?.name || 'Unknown Item';
-              const moreItems = items.length > 1 ? `+${items.length - 1} more` : '';
+          {loadingList ? (
+            <div className="text-gray-500 text-center py-10">Loading history...</div>
+          ) : (
+            <div className="space-y-4">
+              {ordersSummary.map((order) => {
+                const items = order.items as any[];
+                const firstItemName = items[0]?.name || 'Unknown Item';
+                const moreItems = items.length > 1 ? `+${items.length - 1} more` : '';
 
-              return (
-                <button
-                  key={order.id}
-                  onClick={() => setSelectedOrderId(order.id)}
-                  className="w-full bg-[#1a1a1a] p-4 rounded-2xl flex items-center justify-between hover:bg-[#252525] transition-colors text-left"
-                >
-                  <div>
-                    <p className="font-bold text-[#c4ff00] mb-1">Order #{order.id.slice(-4)}</p>
-                    <p className="text-sm text-white font-medium">{firstItemName} {moreItems}</p>
-                    <p className="text-xs text-gray-500 mt-1">{new Date(order.created_at).toLocaleTimeString()}</p>
-                  </div>
-                  <ChevronRight className="text-gray-500" />
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    key={order.id}
+                    onClick={() => setSelectedOrderId(order.id)}
+                    className="w-full bg-[#1a1a1a] p-4 rounded-2xl flex items-center justify-between hover:bg-[#252525] transition-colors text-left border border-gray-800"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-[#c4ff00]">#{order.id.slice(-4)}</span>
+                        <span className="text-xs text-gray-500">• {new Date(order.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <p className="text-sm text-white font-medium">{firstItemName} {moreItems}</p>
+                      <p className="text-xs text-gray-400 mt-1">Total: ₹{order.total_amount}</p>
+                    </div>
+                    <ChevronRight className="text-gray-500" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -161,11 +192,11 @@ export function OrderTracking({ onNavigate }: OrderTrackingProps) {
       <div className="max-w-md mx-auto">
         <div className="sticky top-0 z-40 bg-black/95 backdrop-blur-sm border-b border-gray-800 px-5 py-6">
           <button 
-            onClick={() => recentOrderIds.length > 1 ? setSelectedOrderId(null) : onNavigate('home')} 
+            onClick={() => ordersSummary.length > 1 ? setSelectedOrderId(null) : onNavigate('home')} 
             className="flex items-center gap-2 text-gray-400"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span>{recentOrderIds.length > 1 ? 'Back to Orders' : 'Back'}</span>
+            <span>{ordersSummary.length > 1 ? 'Back to Orders' : 'Back'}</span>
           </button>
         </div>
 
