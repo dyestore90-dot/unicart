@@ -14,7 +14,7 @@ const ADMIN_EMAIL = "santgolla9@gmail.com";
 export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]); // New State
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   
@@ -61,6 +61,7 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
     return rest ? !rest.is_open : false; // Default to open if not found
   };
 
+  // --- LOGIC: Filter Items based on State ---
   let displayedItems = menuItems;
   let matchingRestaurants: string[] = [];
 
@@ -138,7 +139,7 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
                 <MenuItemCard 
                   key={item.id} 
                   item={item} 
-                  isClosed={isRestaurantClosed(item.restaurant_name)} // Pass Closed Status
+                  isClosed={isRestaurantClosed(item.restaurant_name)} 
                   onClick={() => setViewingItem(item)} 
                   onRestaurantClick={(name) => setSelectedRestaurant(name)}
                 />
@@ -174,7 +175,7 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
                   <MenuItemCard 
                     key={item.id} 
                     item={item} 
-                    isClosed={isRestaurantClosed(item.restaurant_name)} // Pass Closed Status
+                    isClosed={isRestaurantClosed(item.restaurant_name)} 
                     onClick={() => setViewingItem(item)} 
                     onRestaurantClick={(name) => { setSelectedRestaurant(name); setSearchQuery(''); }}
                   />
@@ -209,7 +210,8 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
             <div className="px-5">
               <h2 className="text-lg font-semibold mb-4">{selectedCategory === 'All' ? 'All Items' : selectedCategory}</h2>
               <div className="grid grid-cols-2 gap-4">
-                {filteredItems.map((item) => (
+                {/* --- FIX: Changed 'filteredItems' to 'displayedItems' below --- */}
+                {displayedItems.map((item) => (
                   <MenuItemCard key={item.id} item={item} isClosed={isRestaurantClosed(item.restaurant_name)} onClick={() => setViewingItem(item)} onRestaurantClick={(name) => setSelectedRestaurant(name)}/>
                 ))}
               </div>
@@ -224,7 +226,7 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
           allItems={menuItems}
           onClose={() => setViewingItem(null)}
           onItemClick={(item) => setViewingItem(item)}
-          isClosed={isRestaurantClosed(viewingItem.restaurant_name)} // Pass Closed Status to Big View
+          isClosed={isRestaurantClosed(viewingItem.restaurant_name)} 
         />
       )}
 
