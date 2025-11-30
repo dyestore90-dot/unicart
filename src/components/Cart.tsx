@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Plus, Minus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Minus,HX Trash2 } from 'lucide-react';
 import { useUser, SignedIn, SignedOut, SignInButton } from '@clerk/clerk-react';
 import { useCart } from '../contexts/CartContext';
 import { supabase } from '../lib/supabase';
@@ -9,19 +9,15 @@ interface CartProps {
 }
 
 export function Cart({ onNavigate }: CartProps) {
-  // IMPORTANT: We use 'setOrderAsActive' to save the ID to local storage
-  const { cart, updateQuantity, removeFromCart, totalAmount, clearCart, setOrderAsActive } = useCart();
+  // CHANGED: Use 'addActiveOrder' instead of 'setOrderAsActive'
+  const { cart, updateQuantity, removeFromCart, totalAmount, clearCart, addActiveOrder } = useCart();
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
   
-  // State for manual phone input (used if Clerk doesn't have a verified number)
   const [manualPhone, setManualPhone] = useState('');
-
-  // Priority: Verified Clerk Phone -> Manual Input
   const verifiedPhone = user?.primaryPhoneNumber?.phoneNumber;
   const finalPhoneNumber = verifiedPhone || manualPhone;
 
-  // Generate a Short, Unique ID (e.g., ORD-4521-XY)
   const generateUniqueId = () => {
     const timeComponent = Date.now().toString().slice(-4);
     const randomComponent = Math.random().toString(36).substr(2, 2).toUpperCase();
@@ -42,8 +38,6 @@ export function Cart({ onNavigate }: CartProps) {
     setLoading(true);
 
     try {
-      // 1. Get the LATEST batch and check if it is ACTIVE
-      // This prevents ordering when the shop is closed
       const { data: batch, error: batchError } = await supabase
         .from('order_batches')
         .select('id, is_active, slot_label')
@@ -63,10 +57,8 @@ export function Cart({ onNavigate }: CartProps) {
         return;
       }
 
-      // 2. Generate ID
       const customOrderId = generateUniqueId();
 
-      // 3. Insert Order into Database
       const { error } = await supabase
         .from('orders')
         .insert({
@@ -83,9 +75,8 @@ export function Cart({ onNavigate }: CartProps) {
 
       if (error) throw error;
 
-      // 4. Save ID to Local Storage (via Context) & Clear Cart
-      // This ensures the order doesn't "vanish" if you refresh
-      setOrderAsActive(customOrderId);
+      // CHANGED: Add to list of active orders
+      addActiveOrder(customOrderId);
       clearCart();
       
       onNavigate('confirmation', customOrderId);
@@ -129,7 +120,6 @@ export function Cart({ onNavigate }: CartProps) {
         <div className="px-5 py-6">
           <h1 className="text-2xl font-bold mb-6">Your Cart</h1>
 
-          {/* Cart Items List */}
           <div className="space-y-4 mb-8">
             {cart.map((item) => (
               <div key={item.id} className="bg-[#1a1a1a] rounded-2xl p-4">
@@ -164,13 +154,11 @@ export function Cart({ onNavigate }: CartProps) {
             <div className="bg-[#1a1a1a] rounded-2xl p-5 mb-8">
               <h2 className="font-semibold mb-4 text-[#c4ff00]">Delivery Details</h2>
               <div className="space-y-4">
-                {/* User Name */}
                 <div className="bg-[#252525] p-3 rounded-xl border border-gray-800">
                   <p className="text-xs text-gray-400">Ordering as</p>
                   <p className="font-semibold">{user?.fullName || user?.firstName}</p>
                 </div>
 
-                {/* Phone Number Logic */}
                 <div>
                   <label className="text-xs text-gray-400 mb-1 block">Phone Number *</label>
                   {verifiedPhone ? (
@@ -189,13 +177,11 @@ export function Cart({ onNavigate }: CartProps) {
                   )}
                 </div>
 
-                {/* Address */}
                 <div className="bg-[#252525] p-3 rounded-xl border border-gray-800">
                   <p className="text-xs text-gray-400">Delivery Address</p>
                   <p className="text-white">SSN CAMPUS IIIT ONGOLE</p>
                 </div>
                 
-                {/* Collection Point */}
                 <div className="bg-[#2a2a2a] border border-[#c4ff00]/30 rounded-xl px-4 py-3 flex items-center gap-3">
                   <span className="text-lg">📍</span>
                   <p className="text-sm text-gray-300"><strong>Collection Point:</strong> College Campus Gate</p>
