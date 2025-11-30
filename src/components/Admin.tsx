@@ -1,20 +1,21 @@
 import { useState } from 'react';
-import { Package, Radio, Menu, Image, Grid } from 'lucide-react';
+import { Package, Radio, Menu, Image, Grid, Store } from 'lucide-react';
 import { AdminOrders } from './AdminOrders';
 import { AdminTracking } from './AdminTracking';
 import { AdminMenu } from './AdminMenu';
 import { AdminHeroBanners } from './AdminHeroBanners';
-import { AdminCategories } from './AdminCategories'; // Import new component
+import { AdminCategories } from './AdminCategories';
+import { AdminRestaurants } from './AdminRestaurants'; // Import New Component
 
 export function Admin() {
-  // Added 'categories' to state
-  const [activeTab, setActiveTab] = useState<'orders' | 'tracking' | 'menu' | 'banners' | 'categories'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'tracking' | 'menu' | 'banners' | 'categories' | 'restaurants'>('orders');
 
   const tabs = [
     { id: 'orders' as const, label: 'Orders', icon: Package },
     { id: 'tracking' as const, label: 'Tracking', icon: Radio },
     { id: 'menu' as const, label: 'Menu', icon: Menu },
-    { id: 'categories' as const, label: 'Cats', icon: Grid }, // New Tab
+    { id: 'categories' as const, label: 'Cats', icon: Grid },
+    { id: 'restaurants' as const, label: 'Rest.', icon: Store }, // New Tab
     { id: 'banners' as const, label: 'Banners', icon: Image },
   ];
 
@@ -51,7 +52,8 @@ export function Admin() {
           {activeTab === 'orders' && <AdminOrders />}
           {activeTab === 'tracking' && <AdminTracking />}
           {activeTab === 'menu' && <AdminMenu />}
-          {activeTab === 'categories' && <AdminCategories />} 
+          {activeTab === 'categories' && <AdminCategories />}
+          {activeTab === 'restaurants' && <AdminRestaurants />} 
           {activeTab === 'banners' && <AdminHeroBanners />}
         </div>
       </div>
