@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Image as ImageIcon, Store } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { MenuItem } from '../lib/database.types';
 
@@ -14,6 +14,8 @@ export function AdminMenu() {
     price: '',
     category: 'Biryani',
     description: '',
+    image_url: '',        // NEW
+    restaurant_name: '',  // NEW
     is_recommended: false,
   });
 
@@ -45,6 +47,9 @@ export function AdminMenu() {
       return;
     }
 
+    // Default restaurant name if empty
+    const finalRestaurantName = formData.restaurant_name.trim() || 'UniCart Kitchen';
+
     try {
       if (editingItem) {
         const { error } = await supabase
@@ -54,6 +59,8 @@ export function AdminMenu() {
             price: Number(formData.price),
             category: formData.category,
             description: formData.description,
+            image_url: formData.image_url,
+            restaurant_name: finalRestaurantName,
             is_recommended: formData.is_recommended,
           })
           .eq('id', editingItem.id);
@@ -66,9 +73,10 @@ export function AdminMenu() {
           price: Number(formData.price),
           category: formData.category,
           description: formData.description,
+          image_url: formData.image_url,
+          restaurant_name: finalRestaurantName,
           is_recommended: formData.is_recommended,
           is_available: true,
-          image_url: '',
         });
 
         if (error) throw error;
@@ -118,7 +126,9 @@ export function AdminMenu() {
       name: item.name,
       price: item.price.toString(),
       category: item.category,
-      description: item.description,
+      description: item.description || '',
+      image_url: item.image_url || '',
+      restaurant_name: item.restaurant_name || '',
       is_recommended: item.is_recommended,
     });
     setShowAddForm(true);
@@ -130,6 +140,8 @@ export function AdminMenu() {
       price: '',
       category: 'Biryani',
       description: '',
+      image_url: '',
+      restaurant_name: '',
       is_recommended: false,
     });
     setEditingItem(null);
@@ -153,40 +165,67 @@ export function AdminMenu() {
       )}
 
       {showAddForm && (
-        <div className="bg-[#1a1a1a] rounded-2xl p-5">
-          <h2 className="font-semibold mb-4">
+        <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-gray-800">
+          <h2 className="font-semibold mb-4 text-[#c4ff00]">
             {editingItem ? 'Edit Item' : 'Add New Item'}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              type="text"
-              placeholder="Item Name *"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
-              required
-            />
+            {/* Name & Price */}
+            <div className="grid grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="Item Name *"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
+                required
+              />
+              <input
+                type="number"
+                placeholder="Price (₹) *"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
+                required
+              />
+            </div>
 
-            <input
-              type="number"
-              placeholder="Price (₹) *"
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
-              required
-            />
+            {/* Category & Restaurant */}
+            <div className="grid grid-cols-2 gap-4">
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
+              >
+                <option value="Biryani">Biryani</option>
+                <option value="Chinese">Chinese</option>
+                <option value="Snacks">Snacks</option>
+                <option value="Drinks">Drinks</option>
+              </select>
+              <div className="relative">
+                <Store className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Restaurant Name"
+                  value={formData.restaurant_name}
+                  onChange={(e) => setFormData({ ...formData, restaurant_name: e.target.value })}
+                  className="w-full bg-[#252525] text-white rounded-xl pl-10 pr-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
+                />
+              </div>
+            </div>
 
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
-            >
-              <option value="Biryani">Biryani</option>
-              <option value="Chinese">Chinese</option>
-              <option value="Snacks">Snacks</option>
-              <option value="Drinks">Drinks</option>
-            </select>
+            {/* Image URL */}
+            <div className="relative">
+              <ImageIcon className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Image URL (e.g., https://...)"
+                value={formData.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                className="w-full bg-[#252525] text-white rounded-xl pl-10 pr-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
+              />
+            </div>
 
             <textarea
               placeholder="Description (optional)"
@@ -196,19 +235,19 @@ export function AdminMenu() {
               className="w-full bg-[#252525] text-white rounded-xl px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20 resize-none"
             />
 
-            <label className="flex items-center gap-3 text-sm">
+            <label className="flex items-center gap-3 text-sm cursor-pointer">
               <input
                 type="checkbox"
                 checked={formData.is_recommended}
                 onChange={(e) =>
                   setFormData({ ...formData, is_recommended: e.target.checked })
                 }
-                className="w-5 h-5"
+                className="w-5 h-5 accent-[#c4ff00]"
               />
               <span>Mark as Recommended</span>
             </label>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-2">
               <button
                 type="submit"
                 className="flex-1 bg-[#c4ff00] text-black font-semibold py-3 rounded-xl hover:bg-[#b3e600] transition-colors"
@@ -229,45 +268,66 @@ export function AdminMenu() {
 
       <div className="space-y-4">
         {menuItems.map((item) => (
-          <div key={item.id} className="bg-[#1a1a1a] rounded-2xl p-5">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">{item.name}</h3>
-                <p className="text-[#c4ff00] font-bold mb-1">₹{item.price}</p>
-                <p className="text-sm text-gray-400">{item.category}</p>
-                {item.is_recommended && (
-                  <span className="inline-block mt-2 text-xs bg-[#c4ff00] text-black px-2 py-1 rounded">
-                    Recommended
-                  </span>
+          <div key={item.id} className="bg-[#1a1a1a] rounded-2xl p-4 flex gap-4">
+            {/* Thumbnail Preview */}
+            <div className="w-20 h-20 bg-[#252525] rounded-xl flex-shrink-0 overflow-hidden">
+              {item.image_url ? (
+                <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-2xl">
+                   {item.category === 'Biryani' && '🍛'}
+                   {item.category === 'Chinese' && '🥡'}
+                   {item.category === 'Snacks' && '🍟'}
+                   {item.category === 'Drinks' && '🥤'}
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-semibold text-lg truncate">{item.name}</h3>
+                  <p className="text-[#c4ff00] font-bold">₹{item.price}</p>
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => handleEdit(item)}
+                    className="p-2 hover:bg-[#252525] rounded-lg transition-colors"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-500"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 mt-1">
+                 <span className="text-xs text-gray-400 bg-[#252525] px-2 py-0.5 rounded">{item.category}</span>
+                 {item.restaurant_name && (
+                   <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded truncate max-w-[120px]">
+                     {item.restaurant_name}
+                   </span>
+                 )}
+                 {item.is_recommended && (
+                  <span className="text-xs bg-[#c4ff00] text-black px-2 py-0.5 rounded">Rec</span>
                 )}
               </div>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(item)}
-                  className="p-2 hover:bg-[#252525] rounded-lg transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-500"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+              <button
+                onClick={() => handleToggleAvailability(item)}
+                className={`mt-3 w-full py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  item.is_available
+                    ? 'bg-[#252525] text-white hover:bg-[#333]'
+                    : 'bg-red-500/20 text-red-500 hover:bg-red-500/30'
+                }`}
+              >
+                {item.is_available ? 'Available' : 'Out of Stock'}
+              </button>
             </div>
-
-            <button
-              onClick={() => handleToggleAvailability(item)}
-              className={`w-full py-2 rounded-xl text-sm font-semibold transition-colors ${
-                item.is_available
-                  ? 'bg-[#252525] text-white hover:bg-[#2a2a2a]'
-                  : 'bg-red-500/20 text-red-500 hover:bg-red-500/30'
-              }`}
-            >
-              {item.is_available ? 'Available' : 'Out of Stock'}
-            </button>
           </div>
         ))}
       </div>
