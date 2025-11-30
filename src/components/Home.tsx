@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Search, Lock, ClipboardList, X, Store, ArrowLeft } from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
+import { AnimatePresence } from 'framer-motion'; // IMPORT THIS
 import { supabase } from '../lib/supabase';
 import type { MenuItem, Category, Restaurant } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
@@ -55,13 +56,11 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
     }
   };
 
-  // Helper to check if a restaurant is closed
   const isRestaurantClosed = (restName: string) => {
     const rest = restaurants.find(r => r.name === restName);
-    return rest ? !rest.is_open : false; // Default to open if not found
+    return rest ? !rest.is_open : false;
   };
 
-  // --- LOGIC: Filter Items based on State ---
   let displayedItems = menuItems;
   let matchingRestaurants: string[] = [];
 
@@ -85,82 +84,74 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
   const recommendedItems = menuItems.filter((item) => item.is_recommended);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-32">
+    <div className="min-h-screen bg-black text-white pb-32 font-sans">
       <div className="max-w-md mx-auto">
-        <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-sm border-b border-gray-800">
+        <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/5 transition-all duration-300">
           <div className="px-5 py-4">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold" onClick={() => { setSelectedRestaurant(null); setSearchQuery(''); }}>Unicart</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent cursor-pointer" onClick={() => { setSelectedRestaurant(null); setSearchQuery(''); }}>Unicart</h1>
               <div className="flex items-center gap-3">
                 {isAdmin && (
-                  <button onClick={() => onNavigate('admin')} className="p-2 text-[#c4ff00] hover:bg-[#c4ff00]/10 rounded-xl border border-[#c4ff00]/50">
+                  <button onClick={() => onNavigate('admin')} className="p-2 text-[#c4ff00] hover:bg-[#c4ff00]/10 rounded-xl border border-[#c4ff00]/50 transition-colors">
                     <Lock className="w-4 h-4" />
                   </button>
                 )}
                 {recentOrderIds.length > 0 && (
-                  <button onClick={() => onNavigate('tracking')} className="bg-[#252525] text-white px-3 py-2 rounded-xl font-semibold border border-gray-700 flex items-center gap-2 hover:bg-[#333]">
+                  <button onClick={() => onNavigate('tracking')} className="bg-white/10 text-white px-3 py-2 rounded-xl font-semibold border border-white/10 flex items-center gap-2 hover:bg-white/20 transition-all">
                     <ClipboardList className="w-4 h-4 text-[#c4ff00]" />
-                    <span className="text-sm">My Orders</span>
+                    <span className="text-xs">History</span>
                   </button>
                 )}
-                <SignedOut><SignInButton mode="modal"><button className="bg-[#1a1a1a] text-white px-4 py-2 rounded-xl font-semibold">Sign In</button></SignInButton></SignedOut>
+                <SignedOut><SignInButton mode="modal"><button className="bg-white text-black px-4 py-2 rounded-xl font-bold text-sm hover:scale-105 transition-transform">Sign In</button></SignInButton></SignedOut>
                 <SignedIn><UserButton afterSignOutUrl="/" /></SignedIn>
-                <button onClick={() => onNavigate('cart')} className="relative bg-[#c4ff00] text-black w-10 h-10 rounded-xl flex items-center justify-center font-semibold">
+                <button onClick={() => onNavigate('cart')} className="relative bg-[#c4ff00] text-black w-10 h-10 rounded-xl flex items-center justify-center font-bold hover:scale-105 transition-transform shadow-lg shadow-[#c4ff00]/20">
                   <ShoppingCart className="w-5 h-5" />
-                  {totalItems > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center border-2 border-black">{totalItems}</span>}
+                  {totalItems > 0 && <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-black font-bold">{totalItems}</span>}
                 </button>
               </div>
             </div>
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); if(selectedRestaurant) setSelectedRestaurant(null); }} className="w-full bg-[#1a1a1a] text-white rounded-2xl pl-12 pr-10 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20" />
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-[#c4ff00] transition-colors" />
+              <input type="text" placeholder="Search food or restaurants..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); if(selectedRestaurant) setSelectedRestaurant(null); }} className="w-full bg-[#1a1a1a] text-white rounded-2xl pl-12 pr-10 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/50 border border-transparent focus:border-[#c4ff00]/20 transition-all placeholder-gray-600" />
               {searchQuery && <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>}
             </div>
           </div>
         </header>
 
-        {/* RESTAURANT PAGE */}
+        {/* CONTENT AREA */}
         {selectedRestaurant ? (
           <div className="px-5 py-6 animate-in slide-in-from-right duration-300">
-            <button onClick={() => setSelectedRestaurant(null)} className="flex items-center gap-2 text-[#c4ff00] mb-6 hover:opacity-80"><ArrowLeft className="w-5 h-5" /> Back to Home</button>
-            
-            <div className="bg-[#1a1a1a] p-6 rounded-2xl mb-6 text-center border border-gray-800">
-              <div className="w-16 h-16 bg-[#252525] rounded-full flex items-center justify-center mx-auto mb-3"><Store className="w-8 h-8 text-gray-400" /></div>
-              <h2 className="text-2xl font-bold mb-1">{selectedRestaurant}</h2>
+            <button onClick={() => setSelectedRestaurant(null)} className="flex items-center gap-2 text-[#c4ff00] mb-6 hover:opacity-80 font-medium"><ArrowLeft className="w-5 h-5" /> Back</button>
+            <div className="bg-[#1a1a1a] p-6 rounded-3xl mb-6 text-center border border-white/5 shadow-2xl">
+              <div className="w-16 h-16 bg-[#252525] rounded-full flex items-center justify-center mx-auto mb-3 border border-white/10"><Store className="w-7 h-7 text-[#c4ff00]" /></div>
+              <h2 className="text-2xl font-bold mb-1 text-white">{selectedRestaurant}</h2>
               {isRestaurantClosed(selectedRestaurant) ? (
-                <span className="text-red-500 font-bold bg-red-500/10 px-3 py-1 rounded-full text-sm">Currently Closed</span>
+                <span className="text-red-500 font-bold bg-red-500/10 px-3 py-1 rounded-full text-xs border border-red-500/20">Currently Closed</span>
               ) : (
-                <p className="text-gray-400 text-sm">All available items</p>
+                <p className="text-gray-400 text-sm">Full Menu</p>
               )}
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               {displayedItems.map((item) => (
-                <MenuItemCard 
-                  key={item.id} 
-                  item={item} 
-                  isClosed={isRestaurantClosed(item.restaurant_name)} 
-                  onClick={() => setViewingItem(item)} 
-                  onRestaurantClick={(name) => setSelectedRestaurant(name)}
-                />
+                <MenuItemCard key={item.id} item={item} isClosed={isRestaurantClosed(item.restaurant_name)} onClick={() => setViewingItem(item)} onRestaurantClick={(name) => setSelectedRestaurant(name)}/>
               ))}
             </div>
           </div>
         ) : searchQuery ? (
           <div className="px-5 py-6">
-            <h2 className="text-lg font-semibold mb-4">Search Results</h2>
+            <h2 className="text-lg font-bold mb-4 text-gray-200">Search Results</h2>
             {matchingRestaurants.length > 0 && (
               <div className="mb-8">
-                <h3 className="text-sm text-gray-400 mb-3 uppercase tracking-wider font-bold">Restaurants</h3>
+                <h3 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">Restaurants</h3>
                 <div className="space-y-3">
                   {matchingRestaurants.map(restName => {
                     const isClosed = isRestaurantClosed(restName);
                     return (
-                      <button key={restName} onClick={() => { setSelectedRestaurant(restName); setSearchQuery(''); }} className="w-full bg-[#1a1a1a] p-4 rounded-xl flex items-center gap-4 hover:bg-[#252525] transition-colors text-left border border-gray-800/50">
-                        <div className="w-12 h-12 bg-[#252525] rounded-lg flex items-center justify-center"><Store className="w-6 h-6 text-[#c4ff00]" /></div>
+                      <button key={restName} onClick={() => { setSelectedRestaurant(restName); setSearchQuery(''); }} className="w-full bg-[#1a1a1a] p-4 rounded-2xl flex items-center gap-4 hover:bg-[#252525] transition-all text-left border border-white/5 active:scale-98">
+                        <div className="w-12 h-12 bg-[#252525] rounded-xl flex items-center justify-center"><Store className="w-6 h-6 text-[#c4ff00]" /></div>
                         <div>
-                          <p className="font-bold text-lg">{restName}</p>
-                          <p className={`text-xs ${isClosed ? 'text-red-500 font-bold' : 'text-gray-500'}`}>{isClosed ? 'Closed Now' : 'View Menu'}</p>
+                          <p className="font-bold text-lg text-white">{restName}</p>
+                          <p className={`text-xs ${isClosed ? 'text-red-500 font-bold' : 'text-gray-500'}`}>{isClosed ? 'Closed' : 'View Menu'}</p>
                         </div>
                       </button>
                     )
@@ -169,16 +160,10 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
               </div>
             )}
             <div>
-              <h3 className="text-sm text-gray-400 mb-3 uppercase tracking-wider font-bold">Items</h3>
+              <h3 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">Items</h3>
               <div className="grid grid-cols-2 gap-4">
                 {displayedItems.map((item) => (
-                  <MenuItemCard 
-                    key={item.id} 
-                    item={item} 
-                    isClosed={isRestaurantClosed(item.restaurant_name)} 
-                    onClick={() => setViewingItem(item)} 
-                    onRestaurantClick={(name) => { setSelectedRestaurant(name); setSearchQuery(''); }}
-                  />
+                  <MenuItemCard key={item.id} item={item} isClosed={isRestaurantClosed(item.restaurant_name)} onClick={() => setViewingItem(item)} onRestaurantClick={(name) => { setSelectedRestaurant(name); setSearchQuery(''); }}/>
                 ))}
               </div>
             </div>
@@ -187,11 +172,11 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
           <>
             <HeroBannerCarousel />
             <div className="px-5 py-6">
-              <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-semibold">Top Categories</h2></div>
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                <button onClick={() => setSelectedCategory('All')} className={`px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${selectedCategory === 'All' ? 'bg-[#c4ff00] text-black font-semibold' : 'bg-[#1a1a1a] text-white'}`}>All</button>
+              <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-bold text-white">Categories</h2></div>
+              <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+                <button onClick={() => setSelectedCategory('All')} className={`px-5 py-2.5 rounded-full whitespace-nowrap transition-all font-bold text-sm ${selectedCategory === 'All' ? 'bg-[#c4ff00] text-black shadow-lg shadow-[#c4ff00]/20' : 'bg-[#1a1a1a] text-gray-400 border border-white/5'}`}>All</button>
                 {categories.map((cat) => (
-                  <button key={cat.id} onClick={() => setSelectedCategory(cat.name)} className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${selectedCategory === cat.name ? 'bg-[#c4ff00] text-black font-semibold' : 'bg-[#1a1a1a] text-white hover:bg-[#252525]'}`}>
+                  <button key={cat.id} onClick={() => setSelectedCategory(cat.name)} className={`flex items-center gap-2 px-5 py-2.5 rounded-full whitespace-nowrap transition-all font-bold text-sm ${selectedCategory === cat.name ? 'bg-[#c4ff00] text-black shadow-lg shadow-[#c4ff00]/20' : 'bg-[#1a1a1a] text-gray-400 border border-white/5'}`}>
                     <span>{cat.icon}</span><span>{cat.name}</span>
                   </button>
                 ))}
@@ -199,7 +184,7 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
             </div>
             {recommendedItems.length > 0 && selectedCategory === 'All' && (
               <div className="px-5 pb-6">
-                <h2 className="text-lg font-semibold mb-4">Recommended for you</h2>
+                <h2 className="text-lg font-bold mb-4 text-white">Recommended</h2>
                 <div className="grid grid-cols-2 gap-4">
                   {recommendedItems.slice(0, 4).map((item) => (
                     <MenuItemCard key={item.id} item={item} isClosed={isRestaurantClosed(item.restaurant_name)} onClick={() => setViewingItem(item)} onRestaurantClick={(name) => setSelectedRestaurant(name)}/>
@@ -208,9 +193,8 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
               </div>
             )}
             <div className="px-5">
-              <h2 className="text-lg font-semibold mb-4">{selectedCategory === 'All' ? 'All Items' : selectedCategory}</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {/* --- FIX: Changed 'filteredItems' to 'displayedItems' below --- */}
+              <h2 className="text-lg font-bold mb-4 text-white">{selectedCategory === 'All' ? 'All Items' : selectedCategory}</h2>
+              <div className="grid grid-cols-2 gap-4 pb-20">
                 {displayedItems.map((item) => (
                   <MenuItemCard key={item.id} item={item} isClosed={isRestaurantClosed(item.restaurant_name)} onClick={() => setViewingItem(item)} onRestaurantClick={(name) => setSelectedRestaurant(name)}/>
                 ))}
@@ -220,15 +204,19 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
         )}
       </div>
 
-      {viewingItem && (
-        <ItemDetails 
-          item={viewingItem} 
-          allItems={menuItems}
-          onClose={() => setViewingItem(null)}
-          onItemClick={(item) => setViewingItem(item)}
-          isClosed={isRestaurantClosed(viewingItem.restaurant_name)} 
-        />
-      )}
+      {/* --- ANIMATED OVERLAY FOR ITEM DETAILS --- */}
+      <AnimatePresence>
+        {viewingItem && (
+          <ItemDetails 
+            key="item-details" // Key is needed for animation
+            item={viewingItem} 
+            allItems={menuItems}
+            onClose={() => setViewingItem(null)}
+            onItemClick={(item) => setViewingItem(item)}
+            isClosed={isRestaurantClosed(viewingItem.restaurant_name)} 
+          />
+        )}
+      </AnimatePresence>
 
       <FloatingCartBar onNavigate={onNavigate} />
     </div>
