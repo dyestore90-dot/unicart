@@ -1,5 +1,4 @@
 import { ArrowLeft, Plus, Minus, Store, Lock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion'; // Import Motion
 import type { MenuItem } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
 import { MenuItemCard } from './MenuItemCard';
@@ -20,29 +19,22 @@ export function ItemDetails({ item, allItems, onClose, onItemClick, isClosed = f
   const relatedItems = allItems.filter(i => i.category === item.category && i.id !== item.id).slice(0, 4);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center items-end sm:items-center pointer-events-none">
+    <div className="fixed inset-0 z-50 flex justify-center items-end sm:items-center">
       
-      {/* Backdrop with Blur */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+      {/* Backdrop */}
+      <div 
         onClick={onClose}
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto"
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
       />
 
-      {/* The Main Card - Physics Based Spring Animation */}
-      <motion.div 
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative w-full max-w-md h-[90vh] bg-[#0a0a0a] text-white shadow-2xl flex flex-col rounded-t-[2rem] overflow-hidden pointer-events-auto border-t border-white/10"
+      {/* The Main Card - Full Height, Simple CSS Animation */}
+      <div 
+        className="relative w-full max-w-md h-full bg-[#0a0a0a] text-white shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-200"
       >
         
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto scrollbar-hide">
-          <div className="relative h-80 w-full">
+          <div className="relative h-72 w-full">
             {item.image_url ? (
               <img src={item.image_url} alt={item.name} className={`w-full h-full object-cover ${isClosed ? 'grayscale' : ''}`} />
             ) : (
@@ -54,7 +46,7 @@ export function ItemDetails({ item, allItems, onClose, onItemClick, isClosed = f
               </div>
             )}
             
-            {/* Gradient Fade for text readability */}
+            {/* Gradient Fade */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-[#0a0a0a]"></div>
 
             {isClosed && (
@@ -70,12 +62,12 @@ export function ItemDetails({ item, allItems, onClose, onItemClick, isClosed = f
             </button>
           </div>
 
-          <div className="p-6 pb-32 -mt-10 relative z-10">
+          <div className="p-6 pb-32 -mt-6 relative z-10">
             {/* Title Section */}
             <div className="mb-8">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h1 className="text-3xl font-extrabold mb-2 leading-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">{item.name}</h1>
+                  <h1 className="text-2xl font-extrabold mb-2 leading-tight text-white">{item.name}</h1>
                   {item.restaurant_name && (
                     <div className="flex items-center gap-1.5 text-gray-400 bg-white/5 w-fit px-3 py-1 rounded-full">
                       <Store className="w-3.5 h-3.5" />
@@ -83,10 +75,10 @@ export function ItemDetails({ item, allItems, onClose, onItemClick, isClosed = f
                     </div>
                   )}
                 </div>
-                <p className="text-3xl font-bold text-[#c4ff00] drop-shadow-sm">₹{item.price}</p>
+                <p className="text-2xl font-bold text-[#c4ff00]">₹{item.price}</p>
               </div>
               
-              <div className="bg-white/5 p-5 rounded-2xl border border-white/5 backdrop-blur-md">
+              <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Description</h3>
                 <p className="text-gray-300 text-sm leading-relaxed font-light">
                   {item.description || "No description available for this delicious item."}
@@ -107,35 +99,34 @@ export function ItemDetails({ item, allItems, onClose, onItemClick, isClosed = f
           </div>
         </div>
 
-        {/* BOTTOM BAR - Glassmorphism */}
-        <div className="absolute bottom-0 left-0 right-0 p-5 z-20 bg-gradient-to-t from-black via-black/95 to-transparent pt-10">
+        {/* BOTTOM BAR */}
+        <div className="absolute bottom-0 left-0 right-0 p-5 z-20 bg-[#0a0a0a] border-t border-white/5">
           {isClosed ? (
             <button disabled className="w-full bg-gray-800 text-gray-500 font-bold py-4 rounded-2xl cursor-not-allowed flex items-center justify-center gap-2">
               <Lock className="w-5 h-5" /> Restaurant Currently Closed
             </button>
           ) : quantity === 0 ? (
-            <motion.button 
-              whileTap={{ scale: 0.95 }}
+            <button 
               onClick={() => addToCart(item)} 
-              className="w-full bg-[#c4ff00] text-black font-extrabold py-4 rounded-2xl hover:bg-[#b3e600] shadow-lg shadow-[#c4ff00]/20 text-lg"
+              className="w-full bg-[#c4ff00] text-black font-extrabold py-4 rounded-2xl hover:bg-[#b3e600] active:scale-95 transition-transform text-lg shadow-lg shadow-[#c4ff00]/10"
             >
               Add to Cart - ₹{item.price}
-            </motion.button>
+            </button>
           ) : (
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2 font-bold text-xl">
                 <span className="text-gray-400 text-sm font-normal">Total:</span><span>₹{item.price * quantity}</span>
               </div>
               <div className="flex items-center bg-[#c4ff00] text-black rounded-2xl px-3 py-2 gap-5 shadow-lg shadow-[#c4ff00]/10">
-                <motion.button whileTap={{ scale: 0.8 }} onClick={() => updateQuantity(item.id, quantity - 1)} className="w-8 h-8 flex items-center justify-center bg-black/10 rounded-xl hover:bg-black/20"><Minus className="w-5 h-5" /></motion.button>
+                <button onClick={() => updateQuantity(item.id, quantity - 1)} className="w-8 h-8 flex items-center justify-center bg-black/10 rounded-xl hover:bg-black/20 active:scale-90 transition-transform"><Minus className="w-5 h-5" /></button>
                 <span className="font-bold text-2xl min-w-[24px] text-center">{quantity}</span>
-                <motion.button whileTap={{ scale: 0.8 }} onClick={() => updateQuantity(item.id, quantity + 1)} className="w-8 h-8 flex items-center justify-center bg-black/10 rounded-xl hover:bg-black/20"><Plus className="w-5 h-5" /></motion.button>
+                <button onClick={() => updateQuantity(item.id, quantity + 1)} className="w-8 h-8 flex items-center justify-center bg-black/10 rounded-xl hover:bg-black/20 active:scale-90 transition-transform"><Plus className="w-5 h-5" /></button>
               </div>
             </div>
           )}
         </div>
 
-      </motion.div>
+      </div>
     </div>
   );
 }
