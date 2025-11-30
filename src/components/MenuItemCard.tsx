@@ -1,10 +1,11 @@
 import { Plus, Minus, Store, Lock } from 'lucide-react';
+import { toast } from 'react-hot-toast'; // Import Toast
 import type { MenuItem } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
 
 interface MenuItemCardProps {
   item: MenuItem;
-  isClosed?: boolean; // NEW PROP
+  isClosed?: boolean;
   onClick?: () => void;
   onRestaurantClick?: (restaurantName: string) => void;
 }
@@ -13,6 +14,17 @@ export function MenuItemCard({ item, isClosed = false, onClick, onRestaurantClic
   const { cart, addToCart, updateQuantity } = useCart();
   const cartItem = cart.find((ci) => ci.id === item.id);
   const quantity = cartItem?.quantity || 0;
+
+  const handleAdd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    addToCart(item);
+    // Show a nice mini toast
+    toast.success(`Added ${item.name}`, {
+      duration: 1500,
+      icon: '🛒',
+      style: { fontSize: '12px', padding: '8px' }
+    });
+  };
 
   return (
     <div 
@@ -63,7 +75,7 @@ export function MenuItemCard({ item, isClosed = false, onClick, onRestaurantClic
               <Lock className="w-4 h-4" /> Closed
             </button>
           ) : quantity === 0 ? (
-            <button onClick={(e) => { e.stopPropagation(); addToCart(item); }} className="w-full bg-[#c4ff00] text-black font-bold py-2.5 rounded-xl hover:bg-[#b3e600] transition-colors active:scale-95 transform">
+            <button onClick={handleAdd} className="w-full bg-[#c4ff00] text-black font-bold py-2.5 rounded-xl hover:bg-[#b3e600] transition-colors active:scale-95 transform">
               Add
             </button>
           ) : (
