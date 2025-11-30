@@ -7,6 +7,7 @@ import { useCart } from '../contexts/CartContext';
 import { MenuItemCard } from './MenuItemCard';
 import { FloatingCartBar } from './FloatingCartBar';
 import { HeroBannerCarousel } from './HeroBannerCarousel';
+import { ItemDetails } from './ItemDetails'; // Import the new component
 
 const categories = ['All', 'Biryani', 'Chinese', 'Snacks', 'Drinks'];
 const categoryIcons: Record<string, string> = { Biryani: '🍛', Chinese: '🥡', Snacks: '🍟', Drinks: '🥤' };
@@ -18,7 +19,9 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   
-  // CHANGED: Get list of recent orders
+  // NEW: State for the currently viewing item (Big View)
+  const [viewingItem, setViewingItem] = useState<MenuItem | null>(null);
+
   const { totalItems, recentOrderIds } = useCart();
   const { user } = useUser();
 
@@ -69,7 +72,6 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
                   </button>
                 )}
 
-                {/* NEW: Explicit "My Orders" Button */}
                 {recentOrderIds.length > 0 && (
                   <button
                     onClick={() => onNavigate('tracking')}
@@ -151,7 +153,11 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {recommendedItems.slice(0, 4).map((item) => (
-                <MenuItemCard key={item.id} item={item} />
+                <MenuItemCard 
+                  key={item.id} 
+                  item={item} 
+                  onClick={() => setViewingItem(item)} // OPEN THE BIG VIEW
+                />
               ))}
             </div>
           </div>
@@ -168,12 +174,27 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
           ) : (
             <div className="grid grid-cols-2 gap-4">
               {filteredItems.map((item) => (
-                <MenuItemCard key={item.id} item={item} />
+                <MenuItemCard 
+                  key={item.id} 
+                  item={item} 
+                  onClick={() => setViewingItem(item)} // OPEN THE BIG VIEW
+                />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* --- RENDER THE NEW ITEM DETAILS OVERLAY --- */}
+      {viewingItem && (
+        <ItemDetails 
+          item={viewingItem} 
+          allItems={menuItems}
+          onClose={() => setViewingItem(null)}
+          onItemClick={(item) => setViewingItem(item)}
+        />
+      )}
+
       <FloatingCartBar onNavigate={onNavigate} />
     </div>
   );
