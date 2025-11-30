@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type {QlCartItem, MenuItem } from '../lib/database.types';
+import type { CartItem, MenuItem } from '../lib/database.types';
 
 interface CartContextType {
   cart: CartItem[];
@@ -25,7 +25,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // 2. Initialize Recent Orders (Array)
   const [recentOrderIds, setRecentOrderIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('unicart_recent_orders');
-    return saved ? JSON.parse(saved) : [];
+    // Safety check to ensure it's an array
+    try {
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : []; 
+    } catch {
+      return [];
+    }
   });
 
   // 3. Auto-Save Cart
