@@ -12,6 +12,18 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['categories']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['categories']['Insert']>;
       };
+      // NEW TABLE
+      restaurants: {
+        Row: {
+          id: string;
+          name: string;
+          is_open: boolean;
+          image_url: string | null;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['restaurants']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['restaurants']['Insert']>;
+      };
       menu_items: {
         Row: {
           id: string;
@@ -45,7 +57,7 @@ export interface Database {
         Row: {
           id: string;
           batch_id: string;
-          user_id: string | null; // NEW FIELD
+          user_id: string | null;
           user_name: string;
           hostel: string;
           room: string;
@@ -88,6 +100,7 @@ export interface CartItem {
 }
 
 export type Category = Database['public']['Tables']['categories']['Row'];
+export type Restaurant = Database['public']['Tables']['restaurants']['Row']; // NEW TYPE
 export type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 export type OrderBatch = Database['public']['Tables']['order_batches']['Row'];
 export type Order = Database['public']['Tables']['orders']['Row'];
