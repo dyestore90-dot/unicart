@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Search, Lock, ClipboardList, X, Store, ArrowLeft } from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
-import { AnimatePresence } from 'framer-motion'; // IMPORT THIS
 import { supabase } from '../lib/supabase';
 import type { MenuItem, Category, Restaurant } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
@@ -118,7 +117,6 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
           </div>
         </header>
 
-        {/* CONTENT AREA */}
         {selectedRestaurant ? (
           <div className="px-5 py-6 animate-in slide-in-from-right duration-300">
             <button onClick={() => setSelectedRestaurant(null)} className="flex items-center gap-2 text-[#c4ff00] mb-6 hover:opacity-80 font-medium"><ArrowLeft className="w-5 h-5" /> Back</button>
@@ -204,19 +202,15 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
         )}
       </div>
 
-      {/* --- ANIMATED OVERLAY FOR ITEM DETAILS --- */}
-      <AnimatePresence>
-        {viewingItem && (
-          <ItemDetails 
-            key="item-details" // Key is needed for animation
-            item={viewingItem} 
-            allItems={menuItems}
-            onClose={() => setViewingItem(null)}
-            onItemClick={(item) => setViewingItem(item)}
-            isClosed={isRestaurantClosed(viewingItem.restaurant_name)} 
-          />
-        )}
-      </AnimatePresence>
+      {viewingItem && (
+        <ItemDetails 
+          item={viewingItem} 
+          allItems={menuItems}
+          onClose={() => setViewingItem(null)}
+          onItemClick={(item) => setViewingItem(item)}
+          isClosed={isRestaurantClosed(viewingItem.restaurant_name)} 
+        />
+      )}
 
       <FloatingCartBar onNavigate={onNavigate} />
     </div>
