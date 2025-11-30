@@ -7,7 +7,8 @@ export interface Database {
           name: string;
           price: number;
           category: string;
-          image_url: string;
+          image_url: string; // Already exists
+          restaurant_name: string; // NEW FIELD
           description: string;
           is_available: boolean;
           is_recommended: boolean;
@@ -16,6 +17,7 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['menu_items']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['menu_items']['Insert']>;
       };
+      // ... keep other tables (order_batches, orders, hero_banners) exactly as they are ...
       order_batches: {
         Row: {
           id: string;
@@ -24,6 +26,7 @@ export interface Database {
           status_message: string;
           created_at: string;
           updated_at: string;
+          is_active: boolean; // Ensure this is here if you added it previously
         };
         Insert: Omit<Database['public']['Tables']['order_batches']['Row'], 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Database['public']['Tables']['order_batches']['Insert']>;
@@ -41,7 +44,7 @@ export interface Database {
           payment_mode: string;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['orders']['Row'], 'id' | 'created_at'>;
+        Insert: Omit<Database['public']['Tables']['orders']['Row'], 'created_at'>; // Removed 'id' from Omit based on previous fix
         Update: Partial<Database['public']['Tables']['orders']['Insert']>;
       };
       hero_banners: {
