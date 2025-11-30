@@ -1,14 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { CartItem, MenuItem } from '../lib/database.types';
+import type {QlCartItem, MenuItem } from '../lib/database.types';
 
 interface CartContextType {
   cart: CartItem[];
-  activeOrderId: string | null;
+  recentOrderIds: string[]; // CHANGED: Now an array
   addToCart: (item: MenuItem) => void;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
-  setOrderAsActive: (orderId: string) => void; // New helper
+  addActiveOrder: (orderId: string) => void; // CHANGED: Function name
   totalAmount: number;
   totalItems: number;
 }
@@ -16,21 +16,27 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  // 1. Initialize Cart from Local Storage (Fixes "Empty Cart on Refresh")
+  // 1. Initialize Cart
   const [cart, setCart] = useState<CartItem[]>(() => {
     const saved = localStorage.getItem('unicart_cart');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // 2. Initialize Active Order from Local Storage (Fixes "Lost Tracking")
-  const [activeOrderId, setActiveOrderId] = useState<string | null>(() => {
-    return localStorage.getItem('unicart_active_order_id');
+  // 2. Initialize Recent Orders (Array)
+  const [recentOrderIds, setRecentOrderIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('unicart_recent_orders');
+    return saved ? JSON.parse(saved) : [];
   });
 
-  // 3. Auto-Save Cart whenever it changes
+  // 3. Auto-Save Cart
   useEffect(() => {
     localStorage.setItem('unicart_cart', JSON.stringify(cart));
   }, [cart]);
+
+  // 4. Auto-Save Recent Orders
+  useEffect(() => {
+    localStorage.setItem('unicart_recent_orders', JSON.stringify(recentOrderIds));
+  }, [recentOrderIds]);
 
   const addToCart = (item: MenuItem) => {
     setCart((prevCart) => {
@@ -62,10 +68,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  // 4. Helper to Save Order ID when we place an order
-  const setOrderAsActive = (orderId: string) => {
-    setActiveOrderId(orderId);
-    localStorage.setItem('unicart_active_order_id', orderId);
+  // Add a new order to the list (Newest first)
+  const addActiveOrder = (orderId: string) => {
+    setRecentOrderIds((prev) => [orderId, ...prev]);
   };
 
   const clearCart = () => setCart([]);
@@ -77,12 +82,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartContext.Provider
       value={{ 
         cart, 
-        activeOrderId, 
+        recentOrderIds, 
         addToCart, 
         removeFromCart, 
         updateQuantity, 
         clearCart, 
-        setOrderAsActive, 
+        addActiveOrder, 
         totalAmount, 
         totalItems 
       }}
