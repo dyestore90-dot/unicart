@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Lock, ClipboardList } from 'lucide-react';
+import { ShoppingCart, Search, Lock, ClipboardList, X, Store, ArrowLeft } from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
 import { supabase } from '../lib/supabase';
 import type { MenuItem, Category } from '../lib/database.types';
@@ -13,9 +13,13 @@ const ADMIN_EMAIL = "santgolla9@gmail.com";
 
 export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]); // Dynamic Categories
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(true);
+  
+  // --- NEW SEARCH & RESTAURANT STATES ---
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRestaurant, setSelectedRestaurant] = useState<string | null>(null);
   
   const [viewingItem, setViewingItem] = useState<MenuItem | null>(null);
 
@@ -30,15 +34,12 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
 
   const loadData = async () => {
     try {
-      // 1. Load Categories
       const { data: catData } = await supabase
         .from('categories')
         .select('*')
         .order('sort_order', { ascending: true });
-      
       setCategories(catData || []);
 
-      // 2. Load Items
       const { data: itemData, error } = await supabase
         .from('menu_items')
         .select('*')
@@ -54,9 +55,35 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
     }
   };
 
-  const filteredItems = selectedCategory === 'All'
-    ? menuItems
-    : menuItems.filter((item) => item.category === selectedCategory);
+  // --- LOGIC: Filter Items based on State ---
+  let displayedItems = menuItems;
+  let matchingRestaurants: string[] = [];
+
+  // 1. If a specific Restaurant is selected, SHOW ONLY THAT RESTAURANT
+  if (selectedRestaurant) {
+    displayedItems = menuItems.filter(item => item.restaurant_name === selectedRestaurant);
+  } 
+  // 2. If Searching, Filter by Name OR Restaurant Name
+  else if (searchQuery) {
+    const lowerQuery = searchQuery.toLowerCase();
+    
+    // Find items that match
+    displayedItems = menuItems.filter(item => 
+      item.name.toLowerCase().includes(lowerQuery) || 
+      (item.restaurant_name && item.restaurant_name.toLowerCase().includes(lowerQuery)) ||
+      item.category.toLowerCase().includes(lowerQuery)
+    );
+
+    // Find unique restaurant names that match the query
+    const allRestaurants = Array.from(new Set(menuItems.map(i => i.restaurant_name).filter(Boolean)));
+    matchingRestaurants = allRestaurants.filter(r => r.toLowerCase().includes(lowerQuery));
+  } 
+  // 3. Otherwise, use Category Filter
+  else {
+    displayedItems = selectedCategory === 'All'
+      ? menuItems
+      : menuItems.filter((item) => item.category === selectedCategory);
+  }
 
   const recommendedItems = menuItems.filter((item) => item.is_recommended);
 
@@ -66,7 +93,7 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
         <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-sm border-b border-gray-800">
           <div className="px-5 py-4">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold">Unicart</h1>
+              <h1 className="text-2xl font-bold" onClick={() => { setSelectedRestaurant(null); setSearchQuery(''); }}>Unicart</h1>
               <div className="flex items-center gap-3">
                 {isAdmin && (
                   <button onClick={() => onNavigate('admin')} className="p-2 text-[#c4ff00] hover:bg-[#c4ff00]/10 rounded-xl border border-[#c4ff00]/50">
@@ -74,14 +101,15 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
                   </button>
                 )}
                 
-                {/* My Orders Button */}
-                <button
-                  onClick={() => onNavigate('tracking')}
-                  className="bg-[#252525] text-white px-3 py-2 rounded-xl font-semibold border border-gray-700 flex items-center gap-2 hover:bg-[#333]"
-                >
-                  <ClipboardList className="w-4 h-4 text-[#c4ff00]" />
-                  <span className="text-sm">My Orders</span>
-                </button>
+                {recentOrderIds.length > 0 && (
+                  <button
+                    onClick={() => onNavigate('tracking')}
+                    className="bg-[#252525] text-white px-3 py-2 rounded-xl font-semibold border border-gray-700 flex items-center gap-2 hover:bg-[#333]"
+                  >
+                    <ClipboardList className="w-4 h-4 text-[#c4ff00]" />
+                    <span className="text-sm">My Orders</span>
+                  </button>
+                )}
 
                 <SignedOut>
                   <SignInButton mode="modal">
@@ -102,63 +130,192 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
                 </button>
               </div>
             </div>
+
+            {/* SEARCH BAR */}
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input type="text" placeholder="Search..." className="w-full bg-[#1a1a1a] text-white rounded-2xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20" />
+              <input 
+                type="text" 
+                placeholder="Search items or restaurants..." 
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if(selectedRestaurant) setSelectedRestaurant(null); // Reset restaurant view on new search
+                }}
+                className="w-full bg-[#1a1a1a] text-white rounded-2xl pl-12 pr-10 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20" 
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
           </div>
         </header>
 
-        <HeroBannerCarousel />
-        
-        {/* Dynamic Categories */}
-        <div className="px-5 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Top Categories</h2>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            <button
-              onClick={() => setSelectedCategory('All')}
-              className={`px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${selectedCategory === 'All' ? 'bg-[#c4ff00] text-black font-semibold' : 'bg-[#1a1a1a] text-white'}`}
+        {/* --- VIEW 1: SELECTED RESTAURANT MODE --- */}
+        {selectedRestaurant ? (
+          <div className="px-5 py-6 animate-in slide-in-from-right duration-300">
+            <button 
+              onClick={() => setSelectedRestaurant(null)}
+              className="flex items-center gap-2 text-[#c4ff00] mb-6 hover:opacity-80"
             >
-              All
+              <ArrowLeft className="w-5 h-5" /> Back to Home
             </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.name)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${
-                  selectedCategory === cat.name
-                    ? 'bg-[#c4ff00] text-black font-semibold'
-                    : 'bg-[#1a1a1a] text-white hover:bg-[#252525]'
-                }`}
-              >
-                <span>{cat.icon}</span>
-                <span>{cat.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {recommendedItems.length > 0 && selectedCategory === 'All' && (
-          <div className="px-5 pb-6">
-            <h2 className="text-lg font-semibold mb-4">Recommended for you</h2>
+            <div className="bg-[#1a1a1a] p-6 rounded-2xl mb-6 text-center border border-gray-800">
+              <div className="w-16 h-16 bg-[#252525] rounded-full flex items-center justify-center mx-auto mb-3">
+                <Store className="w-8 h-8 text-gray-400" />
+              </div>
+              <h2 className="text-2xl font-bold mb-1">{selectedRestaurant}</h2>
+              <p className="text-gray-400 text-sm">All available items</p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
-              {recommendedItems.slice(0, 4).map((item) => (
-                <MenuItemCard key={item.id} item={item} onClick={() => setViewingItem(item)} />
+              {displayedItems.map((item) => (
+                <MenuItemCard 
+                  key={item.id} 
+                  item={item} 
+                  onClick={() => setViewingItem(item)} 
+                  onRestaurantClick={(name) => setSelectedRestaurant(name)}
+                />
               ))}
             </div>
           </div>
-        )}
+        ) 
+        
+        // --- VIEW 2: SEARCH RESULTS MODE ---
+        : searchQuery ? (
+          <div className="px-5 py-6">
+            <h2 className="text-lg font-semibold mb-4">Search Results</h2>
+            
+            {/* Matching Restaurants */}
+            {matchingRestaurants.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-sm text-gray-400 mb-3 uppercase tracking-wider font-bold">Restaurants</h3>
+                <div className="space-y-3">
+                  {matchingRestaurants.map(restName => (
+                    <button
+                      key={restName}
+                      onClick={() => {
+                        setSelectedRestaurant(restName);
+                        setSearchQuery(''); // Clear search to enter pure restaurant mode
+                      }}
+                      className="w-full bg-[#1a1a1a] p-4 rounded-xl flex items-center gap-4 hover:bg-[#252525] transition-colors text-left"
+                    >
+                      <div className="w-12 h-12 bg-[#252525] rounded-lg flex items-center justify-center">
+                        <Store className="w-6 h-6 text-[#c4ff00]" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-lg">{restName}</p>
+                        <p className="text-xs text-gray-500">View Menu</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        <div className="px-5">
-          <h2 className="text-lg font-semibold mb-4">{selectedCategory === 'All' ? 'All Items' : selectedCategory}</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {filteredItems.map((item) => (
-              <MenuItemCard key={item.id} item={item} onClick={() => setViewingItem(item)} />
-            ))}
+            {/* Matching Items */}
+            <div>
+              <h3 className="text-sm text-gray-400 mb-3 uppercase tracking-wider font-bold">Items</h3>
+              {displayedItems.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <p>No items found matching "{searchQuery}"</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {displayedItems.map((item) => (
+                    <MenuItemCard 
+                      key={item.id} 
+                      item={item} 
+                      onClick={() => setViewingItem(item)} 
+                      onRestaurantClick={(name) => {
+                        setSelectedRestaurant(name);
+                        setSearchQuery('');
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )
+
+        // --- VIEW 3: DEFAULT HOME MODE ---
+        : (
+          <>
+            <HeroBannerCarousel />
+            
+            {/* Categories */}
+            <div className="px-5 py-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Top Categories</h2>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                <button
+                  onClick={() => setSelectedCategory('All')}
+                  className={`px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${selectedCategory === 'All' ? 'bg-[#c4ff00] text-black font-semibold' : 'bg-[#1a1a1a] text-white'}`}
+                >
+                  All
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.name)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${
+                      selectedCategory === cat.name
+                        ? 'bg-[#c4ff00] text-black font-semibold'
+                        : 'bg-[#1a1a1a] text-white hover:bg-[#252525]'
+                    }`}
+                  >
+                    <span>{cat.icon}</span>
+                    <span>{cat.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {recommendedItems.length > 0 && selectedCategory === 'All' && (
+              <div className="px-5 pb-6">
+                <h2 className="text-lg font-semibold mb-4">Recommended for you</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {recommendedItems.slice(0, 4).map((item) => (
+                    <MenuItemCard 
+                      key={item.id} 
+                      item={item} 
+                      onClick={() => setViewingItem(item)}
+                      onRestaurantClick={(name) => setSelectedRestaurant(name)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="px-5">
+              <h2 className="text-lg font-semibold mb-4">{selectedCategory === 'All' ? 'All Items' : selectedCategory}</h2>
+              {loading ? (
+                <div className="text-center py-12 text-gray-400">Loading menu...</div>
+              ) : displayedItems.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">No items found</div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {displayedItems.map((item) => (
+                    <MenuItemCard 
+                      key={item.id} 
+                      item={item} 
+                      onClick={() => setViewingItem(item)}
+                      onRestaurantClick={(name) => setSelectedRestaurant(name)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {viewingItem && (
