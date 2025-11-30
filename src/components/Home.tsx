@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Search, Bike, Lock } from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
+import { supabase } from '../lib/supabase'; // Using Real DB
 import type { MenuItem } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
 import { MenuItemCard } from './MenuItemCard';
@@ -10,16 +11,8 @@ import { HeroBannerCarousel } from './HeroBannerCarousel';
 const categories = ['All', 'Biryani', 'Chinese', 'Snacks', 'Drinks'];
 const categoryIcons: Record<string, string> = { Biryani: '🍛', Chinese: '🥡', Snacks: '🍟', Drinks: '🥤' };
 
-// Define your Admin Email here
+// YOUR ADMIN EMAIL
 const ADMIN_EMAIL = "santgolla9@gmail.com";
-
-const MOCK_MENU_ITEMS: MenuItem[] = [
-  { id: '1', name: 'Chicken Biryani', price: 180, category: 'Biryani', description: 'Aromatic basmati rice with tender chicken', image_url: '', is_available: true, is_recommended: true, created_at: '' },
-  { id: '2', name: 'Veg Hakka Noodles', price: 120, category: 'Chinese', description: 'Stir-fried noodles', image_url: '', is_available: true, is_recommended: false, created_at: '' },
-  { id: '3', name: 'Paneer Butter Masala', price: 160, category: 'Biryani', description: 'Rich creamy curry', image_url: '', is_available: true, is_recommended: true, created_at: '' },
-  { id: '4', name: 'Cold Coffee', price: 60, category: 'Drinks', description: 'Chilled creamy coffee', image_url: '', is_available: true, is_recommended: false, created_at: '' },
-  { id: '5', name: 'French Fries', price: 90, category: 'Snacks', description: 'Crispy salted fries', image_url: '', is_available: true, is_recommended: false, created_at: '' }
-];
 
 export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -27,15 +20,31 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
   const [loading, setLoading] = useState(true);
   
   const { totalItems, activeOrder } = useCart();
-  const { user } = useUser(); // Get the current user details
+  const { user } = useUser();
 
-  // Check if the current user is the Admin
   const isAdmin = user?.primaryEmailAddress?.emailAddress === ADMIN_EMAIL;
 
   useEffect(() => {
-    setMenuItems(MOCK_MENU_ITEMS);
-    setLoading(false);
+    loadMenuItems();
   }, []);
+
+  // --- THIS FUNCTION FETCHES REAL DATA FROM DB ---
+  const loadMenuItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('is_available', true)
+        .order('is_recommended', { ascending: false });
+
+      if (error) throw error;
+      setMenuItems(data || []);
+    } catch (error) {
+      console.error('Error loading menu:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredItems = selectedCategory === 'All'
     ? menuItems
@@ -52,7 +61,7 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
               <h1 className="text-2xl font-bold">Unicart</h1>
               <div className="flex items-center gap-3">
                 
-                {/* ADMIN BUTTON: Only visible if you are logged in with the correct email */}
+                {/* Admin Button (Only for YOU) */}
                 {isAdmin && (
                   <button 
                     onClick={() => onNavigate('admin')}
