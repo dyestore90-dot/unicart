@@ -1,14 +1,25 @@
 export interface Database {
   public: {
     Tables: {
+      categories: {
+        Row: {
+          id: string;
+          name: string;
+          icon: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['categories']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['categories']['Insert']>;
+      };
       menu_items: {
         Row: {
           id: string;
           name: string;
           price: number;
           category: string;
-          image_url: string; // Already exists
-          restaurant_name: string; // NEW FIELD
+          image_url: string;
+          restaurant_name: string;
           description: string;
           is_available: boolean;
           is_recommended: boolean;
@@ -17,16 +28,15 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['menu_items']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['menu_items']['Insert']>;
       };
-      // ... keep other tables (order_batches, orders, hero_banners) exactly as they are ...
       order_batches: {
         Row: {
           id: string;
           slot_label: string;
           current_step: number;
           status_message: string;
+          is_active: boolean;
           created_at: string;
           updated_at: string;
-          is_active: boolean; // Ensure this is here if you added it previously
         };
         Insert: Omit<Database['public']['Tables']['order_batches']['Row'], 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Database['public']['Tables']['order_batches']['Insert']>;
@@ -35,6 +45,7 @@ export interface Database {
         Row: {
           id: string;
           batch_id: string;
+          user_id: string | null; // NEW FIELD
           user_name: string;
           hostel: string;
           room: string;
@@ -44,7 +55,7 @@ export interface Database {
           payment_mode: string;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['orders']['Row'], 'created_at'>; // Removed 'id' from Omit based on previous fix
+        Insert: Omit<Database['public']['Tables']['orders']['Row'], 'created_at'>;
         Update: Partial<Database['public']['Tables']['orders']['Insert']>;
       };
       hero_banners: {
@@ -76,6 +87,7 @@ export interface CartItem {
   quantity: number;
 }
 
+export type Category = Database['public']['Tables']['categories']['Row'];
 export type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 export type OrderBatch = Database['public']['Tables']['order_batches']['Row'];
 export type Order = Database['public']['Tables']['orders']['Row'];
