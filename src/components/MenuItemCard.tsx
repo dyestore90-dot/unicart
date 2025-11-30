@@ -1,6 +1,5 @@
 import { Plus, Minus, Store, Lock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { motion } from 'framer-motion'; // Import Motion
 import type { MenuItem } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
 
@@ -27,16 +26,11 @@ export function MenuItemCard({ item, isClosed = false, onClick, onRestaurantClic
   };
 
   return (
-    <motion.div 
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileTap={{ scale: 0.95 }} // The "Bouncy" Click Effect
-      transition={{ duration: 0.3 }}
+    <div 
       onClick={onClick}
-      className={`relative bg-[#1a1a1a] rounded-3xl overflow-hidden flex flex-col h-full border border-gray-800/50 shadow-xl ${onClick ? 'cursor-pointer' : ''} ${isClosed ? 'opacity-75 grayscale-[0.5]' : ''}`}
+      className={`relative bg-[#1a1a1a] rounded-3xl overflow-hidden flex flex-col h-full border border-gray-800/50 shadow-xl ${onClick ? 'cursor-pointer active:scale-[0.98] transition-transform duration-100' : ''} ${isClosed ? 'opacity-75 grayscale-[0.5]' : ''}`}
     >
-      {/* Image Area with Gradient Overlay */}
+      {/* Image Area */}
       <div className="aspect-[4/3] bg-[#252525] relative">
         {item.image_url ? (
           <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
@@ -49,7 +43,6 @@ export function MenuItemCard({ item, isClosed = false, onClick, onRestaurantClic
           </div>
         )}
         
-        {/* Modern Gradient Shade at bottom of image for text readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent opacity-60"></div>
 
         {item.is_recommended && !isClosed && (
@@ -65,7 +58,6 @@ export function MenuItemCard({ item, isClosed = false, onClick, onRestaurantClic
       </div>
 
       <div className="p-4 flex flex-col flex-1 relative">
-        {/* Restaurant Tag */}
         {item.restaurant_name && (
           <div 
             onClick={(e) => { if (onRestaurantClick) { e.stopPropagation(); onRestaurantClick(item.restaurant_name); } }}
@@ -85,22 +77,21 @@ export function MenuItemCard({ item, isClosed = false, onClick, onRestaurantClic
               <Lock className="w-5 h-5" />
             </button>
           ) : quantity === 0 ? (
-            <motion.button 
-              whileTap={{ scale: 0.9 }}
+            <button 
               onClick={handleAdd} 
-              className="bg-[#c4ff00] text-black font-bold px-4 py-2 rounded-xl shadow-lg shadow-[#c4ff00]/10 text-sm"
+              className="bg-[#c4ff00] text-black font-bold px-4 py-2 rounded-xl shadow-lg shadow-[#c4ff00]/10 text-sm active:scale-95 transition-transform"
             >
               Add
-            </motion.button>
+            </button>
           ) : (
             <div onClick={(e) => e.stopPropagation()} className="flex items-center bg-[#252525] text-white rounded-xl border border-gray-700 overflow-hidden">
-              <motion.button whileTap={{ backgroundColor: "rgba(255,255,255,0.1)" }} onClick={() => updateQuantity(item.id, quantity - 1)} className="p-2 hover:text-[#c4ff00] transition-colors"><Minus className="w-4 h-4" /></motion.button>
+              <button onClick={() => updateQuantity(item.id, quantity - 1)} className="p-2 hover:text-[#c4ff00] transition-colors active:bg-white/10"><Minus className="w-4 h-4" /></button>
               <span className="font-bold text-sm w-4 text-center">{quantity}</span>
-              <motion.button whileTap={{ backgroundColor: "rgba(255,255,255,0.1)" }} onClick={() => updateQuantity(item.id, quantity + 1)} className="p-2 hover:text-[#c4ff00] transition-colors"><Plus className="w-4 h-4" /></motion.button>
+              <button onClick={() => updateQuantity(item.id, quantity + 1)} className="p-2 hover:text-[#c4ff00] transition-colors active:bg-white/10"><Plus className="w-4 h-4" /></button>
             </div>
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
