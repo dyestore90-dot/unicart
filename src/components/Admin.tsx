@@ -5,7 +5,7 @@ import { AdminTracking } from './AdminTracking';
 import { AdminMenu } from './AdminMenu';
 import { AdminHeroBanners } from './AdminHeroBanners';
 import { AdminCategories } from './AdminCategories';
-import { AdminRestaurants } from './AdminRestaurants'; // Import New Component
+import { AdminRestaurants } from './AdminRestaurants'; // Import the new component
 
 export function Admin() {
   const [activeTab, setActiveTab] = useState<'orders' | 'tracking' | 'menu' | 'banners' | 'categories' | 'restaurants'>('orders');
@@ -15,7 +15,7 @@ export function Admin() {
     { id: 'tracking' as const, label: 'Tracking', icon: Radio },
     { id: 'menu' as const, label: 'Menu', icon: Menu },
     { id: 'categories' as const, label: 'Cats', icon: Grid },
-    { id: 'restaurants' as const, label: 'Rest.', icon: Store }, // New Tab
+    { id: 'restaurants' as const, label: 'Rest.', icon: Store }, // The new tab
     { id: 'banners' as const, label: 'Banners', icon: Image },
   ];
 
@@ -53,7 +53,7 @@ export function Admin() {
           {activeTab === 'tracking' && <AdminTracking />}
           {activeTab === 'menu' && <AdminMenu />}
           {activeTab === 'categories' && <AdminCategories />}
-          {activeTab === 'restaurants' && <AdminRestaurants />} 
+          {activeTab === 'restaurants' && <AdminRestaurants />} {/* Show the component */}
           {activeTab === 'banners' && <AdminHeroBanners />}
         </div>
       </div>
