@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Bike, Lock } from 'lucide-react';
+import { ShoppingCart, Search, Lock, ClipboardList } from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
-import { supabase } from '../lib/supabase'; // Using Real DB
+import { supabase } from '../lib/supabase';
 import type { MenuItem } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
 import { MenuItemCard } from './MenuItemCard';
@@ -11,7 +11,6 @@ import { HeroBannerCarousel } from './HeroBannerCarousel';
 const categories = ['All', 'Biryani', 'Chinese', 'Snacks', 'Drinks'];
 const categoryIcons: Record<string, string> = { Biryani: '🍛', Chinese: '🥡', Snacks: '🍟', Drinks: '🥤' };
 
-// YOUR ADMIN EMAIL
 const ADMIN_EMAIL = "santgolla9@gmail.com";
 
 export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
@@ -19,8 +18,8 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   
-  // FIX: Changed 'activeOrder' to 'activeOrderId' to match CartContext
-  const { totalItems, activeOrderId } = useCart();
+  // CHANGED: Get list of recent orders
+  const { totalItems, recentOrderIds } = useCart();
   const { user } = useUser();
 
   const isAdmin = user?.primaryEmailAddress?.emailAddress === ADMIN_EMAIL;
@@ -29,7 +28,6 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
     loadMenuItems();
   }, []);
 
-  // --- THIS FUNCTION FETCHES REAL DATA FROM DB ---
   const loadMenuItems = async () => {
     try {
       const { data, error } = await supabase
@@ -62,26 +60,26 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
               <h1 className="text-2xl font-bold">Unicart</h1>
               <div className="flex items-center gap-3">
                 
-                {/* Admin Button (Only for YOU) */}
                 {isAdmin && (
                   <button 
                     onClick={() => onNavigate('admin')}
                     className="p-2 text-[#c4ff00] hover:bg-[#c4ff00]/10 rounded-xl transition-colors border border-[#c4ff00]/50"
-                    title="Open Admin Panel"
                   >
                     <Lock className="w-4 h-4" />
                   </button>
                 )}
 
-                {/* Tracking Button */}
-                {/* FIX: Changed 'activeOrder' to 'activeOrderId' here as well */}
-                {activeOrderId && (
+                {/* NEW: Explicit "My Orders" Button */}
+                {recentOrderIds.length > 0 && (
                   <button
                     onClick={() => onNavigate('tracking')}
-                    className="bg-[#252525] text-[#c4ff00] p-2 rounded-xl hover:bg-[#333] transition-colors border border-[#c4ff00]/20"
-                    title="Track Order"
+                    className="bg-[#252525] text-white px-3 py-2 rounded-xl font-semibold border border-gray-700 flex items-center gap-2 hover:bg-[#333] transition-colors"
                   >
-                    <Bike className="w-5 h-5" />
+                    <ClipboardList className="w-4 h-4 text-[#c4ff00]" />
+                    <span className="text-sm">My Orders</span>
+                    <span className="bg-[#c4ff00] text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                      {recentOrderIds.length}
+                    </span>
                   </button>
                 )}
 
@@ -95,13 +93,14 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
                 <SignedIn>
                   <UserButton afterSignOutUrl="/" />
                 </SignedIn>
+                
                 <button
                   onClick={() => onNavigate('cart')}
-                  className="relative bg-[#c4ff00] text-black w-12 h-12 rounded-2xl flex items-center justify-center font-semibold"
+                  className="relative bg-[#c4ff00] text-black w-10 h-10 rounded-xl flex items-center justify-center font-semibold"
                 >
                   <ShoppingCart className="w-5 h-5" />
                   {totalItems > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-black text-[#c4ff00] text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center border-2 border-black">
                       {totalItems}
                     </span>
                   )}
