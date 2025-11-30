@@ -9,11 +9,12 @@ interface CartProps {
 }
 
 export function Cart({ onNavigate }: CartProps) {
-  const { cart, updateQuantity, removeFromCart, totalAmount, clearCart } = useCart();
+  // IMPORTANT: We use 'setOrderAsActive' to save the ID to local storage
+  const { cart, updateQuantity, removeFromCart, totalAmount, clearCart, setOrderAsActive } = useCart();
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
   
-  // State for manual phone input
+  // State for manual phone input (used if Clerk doesn't have a verified number)
   const [manualPhone, setManualPhone] = useState('');
 
   // Priority: Verified Clerk Phone -> Manual Input
@@ -41,10 +42,11 @@ export function Cart({ onNavigate }: CartProps) {
     setLoading(true);
 
     try {
-      // 1. Get the current active batch (Delivery Slot)
+      // 1. Get the LATEST batch and check if it is ACTIVE
+      // This prevents ordering when the shop is closed
       const { data: batch, error: batchError } = await supabase
         .from('order_batches')
-        .select('id')
+        .select('id, is_active, slot_label')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -55,7 +57,13 @@ export function Cart({ onNavigate }: CartProps) {
         return;
       }
 
-      // 2. Generate the ID
+      if (batch.is_active === false) {
+        alert(`⚠️ Orders are currently CLOSED for "${batch.slot_label}".\n\nPlease wait for the next slot to open.`);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Generate ID
       const customOrderId = generateUniqueId();
 
       // 3. Insert Order into Database
@@ -75,7 +83,11 @@ export function Cart({ onNavigate }: CartProps) {
 
       if (error) throw error;
 
+      // 4. Save ID to Local Storage (via Context) & Clear Cart
+      // This ensures the order doesn't "vanish" if you refresh
+      setOrderAsActive(customOrderId);
       clearCart();
+      
       onNavigate('confirmation', customOrderId);
 
     } catch (error) {
@@ -107,9 +119,6 @@ export function Cart({ onNavigate }: CartProps) {
 
   return (
     <div className="min-h-screen bg-black text-white pb-32">
-      {/* This div ensures the content stays "Mobile Width" (max-w-md) 
-         even on desktop screens, preventing it from stretching out.
-      */}
       <div className="max-w-md mx-auto">
         <div className="sticky top-0 z-40 bg-black/95 backdrop-blur-sm border-b border-gray-800 px-5 py-6">
           <button onClick={() => onNavigate('home')} className="flex items-center gap-2 text-gray-400">
@@ -120,7 +129,7 @@ export function Cart({ onNavigate }: CartProps) {
         <div className="px-5 py-6">
           <h1 className="text-2xl font-bold mb-6">Your Cart</h1>
 
-          {/* Cart Items */}
+          {/* Cart Items List */}
           <div className="space-y-4 mb-8">
             {cart.map((item) => (
               <div key={item.id} className="bg-[#1a1a1a] rounded-2xl p-4">
@@ -155,13 +164,13 @@ export function Cart({ onNavigate }: CartProps) {
             <div className="bg-[#1a1a1a] rounded-2xl p-5 mb-8">
               <h2 className="font-semibold mb-4 text-[#c4ff00]">Delivery Details</h2>
               <div className="space-y-4">
-                {/* Name */}
+                {/* User Name */}
                 <div className="bg-[#252525] p-3 rounded-xl border border-gray-800">
                   <p className="text-xs text-gray-400">Ordering as</p>
                   <p className="font-semibold">{user?.fullName || user?.firstName}</p>
                 </div>
 
-                {/* Phone Logic */}
+                {/* Phone Number Logic */}
                 <div>
                   <label className="text-xs text-gray-400 mb-1 block">Phone Number *</label>
                   {verifiedPhone ? (
