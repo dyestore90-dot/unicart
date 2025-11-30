@@ -19,7 +19,8 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   
-  const { totalItems, activeOrder } = useCart();
+  // FIX: Changed 'activeOrder' to 'activeOrderId' to match CartContext
+  const { totalItems, activeOrderId } = useCart();
   const { user } = useUser();
 
   const isAdmin = user?.primaryEmailAddress?.emailAddress === ADMIN_EMAIL;
@@ -73,7 +74,8 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
                 )}
 
                 {/* Tracking Button */}
-                {activeOrder && (
+                {/* FIX: Changed 'activeOrder' to 'activeOrderId' here as well */}
+                {activeOrderId && (
                   <button
                     onClick={() => onNavigate('tracking')}
                     className="bg-[#252525] text-[#c4ff00] p-2 rounded-xl hover:bg-[#333] transition-colors border border-[#c4ff00]/20"
