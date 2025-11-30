@@ -1,12 +1,14 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { CartItem, MenuItem } from '../lib/database.types';
 
 interface CartContextType {
   cart: CartItem[];
+  activeOrderId: string | null;
   addToCart: (item: MenuItem) => void;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
+  setOrderAsActive: (orderId: string) => void; // New helper
   totalAmount: number;
   totalItems: number;
 }
@@ -14,7 +16,21 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  // 1. Initialize Cart from Local Storage (Fixes "Empty Cart on Refresh")
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const saved = localStorage.getItem('unicart_cart');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // 2. Initialize Active Order from Local Storage (Fixes "Lost Tracking")
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(() => {
+    return localStorage.getItem('unicart_active_order_id');
+  });
+
+  // 3. Auto-Save Cart whenever it changes
+  useEffect(() => {
+    localStorage.setItem('unicart_cart', JSON.stringify(cart));
+  }, [cart]);
 
   const addToCart = (item: MenuItem) => {
     setCart((prevCart) => {
@@ -46,16 +62,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  const clearCart = () => {
-    setCart([]);
+  // 4. Helper to Save Order ID when we place an order
+  const setOrderAsActive = (orderId: string) => {
+    setActiveOrderId(orderId);
+    localStorage.setItem('unicart_active_order_id', orderId);
   };
+
+  const clearCart = () => setCart([]);
 
   const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, totalAmount, totalItems }}
+      value={{ 
+        cart, 
+        activeOrderId, 
+        addToCart, 
+        removeFromCart, 
+        updateQuantity, 
+        clearCart, 
+        setOrderAsActive, 
+        totalAmount, 
+        totalItems 
+      }}
     >
       {children}
     </CartContext.Provider>
