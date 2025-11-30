@@ -2,13 +2,18 @@ import { Plus, Minus, Store } from 'lucide-react';
 import type { MenuItem } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
 
-export function MenuItemCard({ item }: { item: MenuItem }) {
+// Added 'onClick' prop here
+export function MenuItemCard({ item, onClick }: { item: MenuItem; onClick?: () => void }) {
   const { cart, addToCart, updateQuantity } = useCart();
   const cartItem = cart.find((ci) => ci.id === item.id);
   const quantity = cartItem?.quantity || 0;
 
   return (
-    <div className="bg-[#1a1a1a] rounded-2xl overflow-hidden flex flex-col h-full">
+    <div 
+      // 1. Make the main card clickable
+      onClick={onClick}
+      className={`bg-[#1a1a1a] rounded-2xl overflow-hidden flex flex-col h-full border border-gray-800/50 ${onClick ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
+    >
       {/* Image Area */}
       <div className="aspect-[4/3] bg-[#252525] relative">
         {item.image_url ? (
@@ -26,7 +31,6 @@ export function MenuItemCard({ item }: { item: MenuItem }) {
           </div>
         )}
         
-        {/* Recommended Badge */}
         {item.is_recommended && (
           <div className="absolute top-2 left-2 bg-[#c4ff00] text-black text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
             Recommended
@@ -35,7 +39,6 @@ export function MenuItemCard({ item }: { item: MenuItem }) {
       </div>
 
       <div className="p-4 flex flex-col flex-1">
-        {/* Restaurant Name */}
         {item.restaurant_name && (
           <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
             <Store className="w-3 h-3" />
@@ -52,13 +55,19 @@ export function MenuItemCard({ item }: { item: MenuItem }) {
 
           {quantity === 0 ? (
             <button
-              onClick={() => addToCart(item)}
+              onClick={(e) => {
+                e.stopPropagation(); // 2. STOP the click from opening the big view
+                addToCart(item);
+              }}
               className="w-full bg-[#c4ff00] text-black font-bold py-2.5 rounded-xl hover:bg-[#b3e600] transition-colors active:scale-95 transform"
             >
               Add
             </button>
           ) : (
-            <div className="flex items-center justify-between bg-[#c4ff00] text-black rounded-xl px-2 py-2">
+            <div 
+              onClick={(e) => e.stopPropagation()} // 3. STOP click here too
+              className="flex items-center justify-between bg-[#c4ff00] text-black rounded-xl px-2 py-2"
+            >
               <button
                 onClick={() => updateQuantity(item.id, quantity - 1)}
                 className="w-8 h-8 flex items-center justify-center hover:bg-black/10 rounded-lg transition-colors"
