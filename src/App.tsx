@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Toaster } from 'react-hot-toast'; // Import Toaster
 import { CartProvider } from './contexts/CartContext';
 import { Home } from './components/Home';
 import { Cart } from './components/Cart';
@@ -17,6 +18,25 @@ function App() {
 
   return (
     <CartProvider>
+      {/* Configure the Toast Notification Style */}
+      <Toaster 
+        position="bottom-center" 
+        toastOptions={{
+          style: {
+            background: '#333',
+            color: '#fff',
+            borderRadius: '12px',
+            border: '1px solid #333',
+          },
+          success: {
+            iconTheme: {
+              primary: '#c4ff00',
+              secondary: 'black',
+            },
+          },
+        }}
+      />
+      
       {screen === 'home' && <Home onNavigate={navigate} />}
       {screen === 'cart' && <Cart onNavigate={navigate} />}
       {screen === 'confirmation' && <OrderConfirmation orderId={orderId} onNavigate={navigate} />}
