@@ -2,24 +2,21 @@ import { useState, useEffect } from 'react';
 import { ShoppingCart, Search, Lock, ClipboardList } from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
 import { supabase } from '../lib/supabase';
-import type { MenuItem } from '../lib/database.types';
+import type { MenuItem, Category } from '../lib/database.types';
 import { useCart } from '../contexts/CartContext';
 import { MenuItemCard } from './MenuItemCard';
 import { FloatingCartBar } from './FloatingCartBar';
 import { HeroBannerCarousel } from './HeroBannerCarousel';
-import { ItemDetails } from './ItemDetails'; // Import the new component
-
-const categories = ['All', 'Biryani', 'Chinese', 'Snacks', 'Drinks'];
-const categoryIcons: Record<string, string> = { Biryani: '🍛', Chinese: '🥡', Snacks: '🍟', Drinks: '🥤' };
+import { ItemDetails } from './ItemDetails';
 
 const ADMIN_EMAIL = "santgolla9@gmail.com";
 
 export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]); // Dynamic Categories
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   
-  // NEW: State for the currently viewing item (Big View)
   const [viewingItem, setViewingItem] = useState<MenuItem | null>(null);
 
   const { totalItems, recentOrderIds } = useCart();
@@ -28,21 +25,30 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
   const isAdmin = user?.primaryEmailAddress?.emailAddress === ADMIN_EMAIL;
 
   useEffect(() => {
-    loadMenuItems();
+    loadData();
   }, []);
 
-  const loadMenuItems = async () => {
+  const loadData = async () => {
     try {
-      const { data, error } = await supabase
+      // 1. Load Categories
+      const { data: catData } = await supabase
+        .from('categories')
+        .select('*')
+        .order('sort_order', { ascending: true });
+      
+      setCategories(catData || []);
+
+      // 2. Load Items
+      const { data: itemData, error } = await supabase
         .from('menu_items')
         .select('*')
         .eq('is_available', true)
         .order('is_recommended', { ascending: false });
 
       if (error) throw error;
-      setMenuItems(data || []);
+      setMenuItems(itemData || []);
     } catch (error) {
-      console.error('Error loading menu:', error);
+      console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
@@ -62,44 +68,31 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold">Unicart</h1>
               <div className="flex items-center gap-3">
-                
                 {isAdmin && (
-                  <button 
-                    onClick={() => onNavigate('admin')}
-                    className="p-2 text-[#c4ff00] hover:bg-[#c4ff00]/10 rounded-xl transition-colors border border-[#c4ff00]/50"
-                  >
+                  <button onClick={() => onNavigate('admin')} className="p-2 text-[#c4ff00] hover:bg-[#c4ff00]/10 rounded-xl border border-[#c4ff00]/50">
                     <Lock className="w-4 h-4" />
                   </button>
                 )}
-
-                {recentOrderIds.length > 0 && (
-                  <button
-                    onClick={() => onNavigate('tracking')}
-                    className="bg-[#252525] text-white px-3 py-2 rounded-xl font-semibold border border-gray-700 flex items-center gap-2 hover:bg-[#333] transition-colors"
-                  >
-                    <ClipboardList className="w-4 h-4 text-[#c4ff00]" />
-                    <span className="text-sm">My Orders</span>
-                    <span className="bg-[#c4ff00] text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                      {recentOrderIds.length}
-                    </span>
-                  </button>
-                )}
+                
+                {/* My Orders Button */}
+                <button
+                  onClick={() => onNavigate('tracking')}
+                  className="bg-[#252525] text-white px-3 py-2 rounded-xl font-semibold border border-gray-700 flex items-center gap-2 hover:bg-[#333]"
+                >
+                  <ClipboardList className="w-4 h-4 text-[#c4ff00]" />
+                  <span className="text-sm">My Orders</span>
+                </button>
 
                 <SignedOut>
                   <SignInButton mode="modal">
-                    <button className="bg-[#1a1a1a] text-white px-4 py-2 rounded-xl font-semibold hover:bg-[#252525] transition-colors">
-                      Sign In
-                    </button>
+                    <button className="bg-[#1a1a1a] text-white px-4 py-2 rounded-xl font-semibold">Sign In</button>
                   </SignInButton>
                 </SignedOut>
                 <SignedIn>
                   <UserButton afterSignOutUrl="/" />
                 </SignedIn>
                 
-                <button
-                  onClick={() => onNavigate('cart')}
-                  className="relative bg-[#c4ff00] text-black w-10 h-10 rounded-xl flex items-center justify-center font-semibold"
-                >
+                <button onClick={() => onNavigate('cart')} className="relative bg-[#c4ff00] text-black w-10 h-10 rounded-xl flex items-center justify-center font-semibold">
                   <ShoppingCart className="w-5 h-5" />
                   {totalItems > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center border-2 border-black">
@@ -111,35 +104,37 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
             </div>
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search for something tasty..."
-                className="w-full bg-[#1a1a1a] text-white rounded-2xl pl-12 pr-4 py-3.5 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
-              />
+              <input type="text" placeholder="Search..." className="w-full bg-[#1a1a1a] text-white rounded-2xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20" />
             </div>
           </div>
         </header>
 
         <HeroBannerCarousel />
         
+        {/* Dynamic Categories */}
         <div className="px-5 py-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Top Categories</h2>
-            <button className="text-sm text-gray-400 flex items-center gap-1">View all →</button>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {categories.map((category) => (
+            <button
+              onClick={() => setSelectedCategory('All')}
+              className={`px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${selectedCategory === 'All' ? 'bg-[#c4ff00] text-black font-semibold' : 'bg-[#1a1a1a] text-white'}`}
+            >
+              All
+            </button>
+            {categories.map((cat) => (
               <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.name)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${
-                  selectedCategory === category
+                  selectedCategory === cat.name
                     ? 'bg-[#c4ff00] text-black font-semibold'
                     : 'bg-[#1a1a1a] text-white hover:bg-[#252525]'
                 }`}
               >
-                {category !== 'All' && <span>{categoryIcons[category]}</span>}
-                <span>{category}</span>
+                <span>{cat.icon}</span>
+                <span>{cat.name}</span>
               </button>
             ))}
           </div>
@@ -147,45 +142,25 @@ export function Home({ onNavigate }: { onNavigate: (screen: string) => void }) {
 
         {recommendedItems.length > 0 && selectedCategory === 'All' && (
           <div className="px-5 pb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Recommended for you</h2>
-              <button className="text-sm text-gray-400 flex items-center gap-1">View all →</button>
-            </div>
+            <h2 className="text-lg font-semibold mb-4">Recommended for you</h2>
             <div className="grid grid-cols-2 gap-4">
               {recommendedItems.slice(0, 4).map((item) => (
-                <MenuItemCard 
-                  key={item.id} 
-                  item={item} 
-                  onClick={() => setViewingItem(item)} // OPEN THE BIG VIEW
-                />
+                <MenuItemCard key={item.id} item={item} onClick={() => setViewingItem(item)} />
               ))}
             </div>
           </div>
         )}
 
         <div className="px-5">
-          <h2 className="text-lg font-semibold mb-4">
-            {selectedCategory === 'All' ? 'All Items' : selectedCategory}
-          </h2>
-          {loading ? (
-            <div className="text-center py-12 text-gray-400">Loading menu...</div>
-          ) : filteredItems.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">No items found</div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {filteredItems.map((item) => (
-                <MenuItemCard 
-                  key={item.id} 
-                  item={item} 
-                  onClick={() => setViewingItem(item)} // OPEN THE BIG VIEW
-                />
-              ))}
-            </div>
-          )}
+          <h2 className="text-lg font-semibold mb-4">{selectedCategory === 'All' ? 'All Items' : selectedCategory}</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {filteredItems.map((item) => (
+              <MenuItemCard key={item.id} item={item} onClick={() => setViewingItem(item)} />
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* --- RENDER THE NEW ITEM DETAILS OVERLAY --- */}
       {viewingItem && (
         <ItemDetails 
           item={viewingItem} 
