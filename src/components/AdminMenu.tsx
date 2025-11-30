@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Image as ImageIcon, Store } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Plus, Edit2, Trash2, Image as ImageIcon, Store, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { MenuItem } from '../lib/database.types';
 
@@ -8,14 +8,18 @@ export function AdminMenu() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  
+  // New state for handling file uploads
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: '',
     price: '',
     category: 'Biryani',
     description: '',
-    image_url: '',        // NEW
-    restaurant_name: '',  // NEW
+    image_url: '',        
+    restaurant_name: '',
     is_recommended: false,
   });
 
@@ -39,6 +43,43 @@ export function AdminMenu() {
     }
   };
 
+  // --- NEW: Handle Image Upload ---
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error('You must select an image to upload.');
+      }
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // 1. Upload to Supabase Storage bucket named 'menu-images'
+      const { error: uploadError } = await supabase.storage
+        .from('menu-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // 2. Get the Public URL
+      const { data } = supabase.storage.from('menu-images').getPublicUrl(filePath);
+      
+      // 3. Set it to form data
+      setFormData({ ...formData, image_url: data.publicUrl });
+      
+    } catch (error) {
+      alert('Error uploading image! Make sure you created a public bucket named "menu-images".');
+      console.error(error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -47,7 +88,6 @@ export function AdminMenu() {
       return;
     }
 
-    // Default restaurant name if empty
     const finalRestaurantName = formData.restaurant_name.trim() || 'UniCart Kitchen';
 
     try {
@@ -146,6 +186,7 @@ export function AdminMenu() {
     });
     setEditingItem(null);
     setShowAddForm(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   if (loading) {
@@ -215,16 +256,47 @@ export function AdminMenu() {
               </div>
             </div>
 
-            {/* Image URL */}
-            <div className="relative">
-              <ImageIcon className="absolute left-3 top-3.5 w-4 h-4 text-gray-500" />
-              <input
-                type="text"
-                placeholder="Image URL (e.g., https://...)"
-                value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                className="w-full bg-[#252525] text-white rounded-xl pl-10 pr-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c4ff00]/20"
-              />
+            {/* --- FILE UPLOAD SECTION --- */}
+            <div className="bg-[#252525] rounded-xl p-4 border border-dashed border-gray-700">
+              <label className="block text-sm text-gray-400 mb-2">Item Image</label>
+              
+              {formData.image_url && (
+                <div className="mb-3 w-full h-32 bg-black/50 rounded-lg overflow-hidden flex items-center justify-center relative group">
+                   <img src={formData.image_url} alt="Preview" className="h-full object-contain" />
+                   <button 
+                      type="button"
+                      onClick={() => {
+                        setFormData({...formData, image_url: ''});
+                        if(fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      className="absolute top-2 right-2 bg-red-500 p-1 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                   >
+                     <Trash2 className="w-4 h-4" />
+                   </button>
+                </div>
+              )}
+
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                  ref={fileInputRef}
+                  className="w-full text-sm text-gray-400
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-[#c4ff00] file:text-black
+                    hover:file:bg-[#b3e600]
+                    cursor-pointer"
+                />
+                {uploading && (
+                  <div className="absolute right-0 top-0 h-full flex items-center pr-4">
+                    <span className="text-[#c4ff00] text-sm animate-pulse">Uploading...</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             <textarea
@@ -250,7 +322,8 @@ export function AdminMenu() {
             <div className="flex gap-3 pt-2">
               <button
                 type="submit"
-                className="flex-1 bg-[#c4ff00] text-black font-semibold py-3 rounded-xl hover:bg-[#b3e600] transition-colors"
+                disabled={uploading}
+                className="flex-1 bg-[#c4ff00] text-black font-semibold py-3 rounded-xl hover:bg-[#b3e600] transition-colors disabled:opacity-50"
               >
                 {editingItem ? 'Update' : 'Add'} Item
               </button>
@@ -269,7 +342,6 @@ export function AdminMenu() {
       <div className="space-y-4">
         {menuItems.map((item) => (
           <div key={item.id} className="bg-[#1a1a1a] rounded-2xl p-4 flex gap-4">
-            {/* Thumbnail Preview */}
             <div className="w-20 h-20 bg-[#252525] rounded-xl flex-shrink-0 overflow-hidden">
               {item.image_url ? (
                 <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
