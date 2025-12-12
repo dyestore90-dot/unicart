@@ -19,6 +19,10 @@ export function Cart({ onNavigate }: CartProps) {
   const [hostel, setHostel] = useState('SSN CAMPUS IIIT ONGOLE'); // Default
   const [room, setRoom] = useState('');
 
+  // --- NEW: Order Charge Logic ---
+  const ORDER_CHARGE = 30;
+  const finalTotal = totalAmount + ORDER_CHARGE;
+
   // 1. Auto-Fill Details from Last Order
   useEffect(() => {
     if (user) {
@@ -95,7 +99,7 @@ export function Cart({ onNavigate }: CartProps) {
           room: room,     // Saved from Input
           phone: phone,   // Saved from Input
           items: cart,
-          total_amount: totalAmount,
+          total_amount: finalTotal, // CHANGED: Using finalTotal (includes ₹30)
           payment_mode: 'Pay on delivery',
         });
 
@@ -174,19 +178,18 @@ export function Cart({ onNavigate }: CartProps) {
           </SignedOut>
 
           <SignedIn>
-            <div className="bg-[#1a1a1a] rounded-2xl p-5 mb-8">
+            {/* Delivery Address Section */}
+            <div className="bg-[#1a1a1a] rounded-2xl p-5 mb-6 border border-gray-800">
               <h2 className="font-semibold mb-4 text-[#c4ff00] flex items-center gap-2">
                 <MapPin className="w-4 h-4" /> Delivery Details
               </h2>
               
               <div className="space-y-4">
-                {/* Name */}
-                <div className="bg-[#252525] p-3 rounded-xl border border-gray-800">
+                <div className="bg-[#252525] p-3 rounded-xl border border-gray-700">
                   <p className="text-xs text-gray-400">Ordering as</p>
                   <p className="font-semibold">{user?.fullName || user?.firstName}</p>
                 </div>
 
-                {/* Phone Input */}
                 <div>
                   <label className="text-xs text-gray-400 mb-1 flex items-center gap-1"><Phone className="w-3 h-3"/> Phone Number *</label>
                   <input 
@@ -198,7 +201,6 @@ export function Cart({ onNavigate }: CartProps) {
                   />
                 </div>
 
-                {/* Hostel Input */}
                 <div>
                   <label className="text-xs text-gray-400 mb-1 flex items-center gap-1"><Home className="w-3 h-3"/> Hostel / Block *</label>
                   <input 
@@ -210,7 +212,6 @@ export function Cart({ onNavigate }: CartProps) {
                   />
                 </div>
 
-                {/* Room Input */}
                 <div>
                   <label className="text-xs text-gray-400 mb-1">Room No / Landmark *</label>
                   <input 
@@ -224,9 +225,24 @@ export function Cart({ onNavigate }: CartProps) {
               </div>
             </div>
 
-            <div className="bg-[#252525] p-4 rounded-xl mb-6 flex justify-between items-center">
-              <span className="text-gray-400">Total Amount</span>
-              <span className="text-2xl font-bold text-[#c4ff00]">₹{totalAmount}</span>
+            {/* Bill Details Section (Updated with Breakdown) */}
+            <div className="bg-[#1a1a1a] p-5 rounded-2xl mb-6 space-y-3 border border-gray-800">
+              <h2 className="font-semibold text-white mb-2">Bill Details</h2>
+              
+              <div className="flex justify-between text-gray-400 text-sm">
+                <span>Item Total</span>
+                <span>₹{totalAmount}</span>
+              </div>
+              
+              <div className="flex justify-between text-gray-400 text-sm">
+                <span>Delivery Partner Fee</span>
+                <span>₹{ORDER_CHARGE}</span>
+              </div>
+
+              <div className="flex justify-between items-center pt-3 border-t border-gray-700 mt-2">
+                <span className="font-semibold text-white">To Pay</span>
+                <span className="text-2xl font-bold text-[#c4ff00]">₹{finalTotal}</span>
+              </div>
             </div>
 
             <button
@@ -234,7 +250,7 @@ export function Cart({ onNavigate }: CartProps) {
               disabled={loading}
               className="w-full bg-[#c4ff00] text-black font-bold py-4 rounded-2xl hover:bg-[#b3e600] transition-all transform hover:scale-[1.02] disabled:opacity-50 shadow-lg shadow-[#c4ff00]/20"
             >
-              {loading ? 'Placing Order...' : 'Place Order (COD)'}
+              {loading ? 'Placing Order...' : `Place Order (COD) • ₹${finalTotal}`}
             </button>
           </SignedIn>
         </div>
