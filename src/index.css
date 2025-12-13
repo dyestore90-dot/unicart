@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 :root {
-  background-color: #000000;
-  color: #ffffff;
+  background-color: #ffffff; /* Changed to White */
+  color: #0f172a; /* Changed to Dark Slate (for text) */
 }
 
 body {
-  /* Modern Dark Gradient Background */
-  background: radial-gradient(circle at top left, #1a1a1a, #000000);
+  /* Modern Light Gradient Background */
+  background: radial-gradient(circle at top left, #f8fafc, #ffffff);
   min-height: 100vh;
   /* Smooth Scrolling */
   scroll-behavior: smooth;
@@ -26,11 +26,11 @@ body {
     display: none;
   }
   
-  /* Glassmorphism Utility */
+  /* Glassmorphism Utility (Light Version) */
   .glass {
-    background: rgba(26, 26, 26, 0.6);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
   }
 }
