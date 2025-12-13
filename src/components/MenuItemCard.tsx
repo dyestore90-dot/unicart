@@ -28,14 +28,14 @@ export function MenuItemCard({ item, isClosed = false, onClick, onRestaurantClic
   return (
     <div 
       onClick={onClick}
-      className={`relative bg-[#1a1a1a] rounded-3xl overflow-hidden flex flex-col h-full border border-gray-800/50 shadow-xl ${onClick ? 'cursor-pointer active:scale-[0.98] transition-transform duration-100' : ''} ${isClosed ? 'opacity-75 grayscale-[0.5]' : ''}`}
+      className={`relative bg-white rounded-3xl overflow-hidden flex flex-col h-full border border-gray-100 shadow-md ${onClick ? 'cursor-pointer active:scale-[0.98] transition-transform duration-100' : ''} ${isClosed ? 'opacity-75 grayscale-[0.5]' : ''}`}
     >
       {/* Image Area */}
-      <div className="aspect-[4/3] bg-[#252525] relative">
+      <div className="aspect-[4/3] bg-gray-100 relative">
         {item.image_url ? (
           <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-gray-800 to-gray-900">
+          <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-gray-100 to-gray-200">
             {item.category === 'Biryani' && '🍛'}
             {item.category === 'Chinese' && '🥡'}
             {item.category === 'Snacks' && '🍟'}
@@ -43,15 +43,15 @@ export function MenuItemCard({ item, isClosed = false, onClick, onRestaurantClic
           </div>
         )}
         
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent opacity-60"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60"></div>
 
         {item.is_recommended && !isClosed && (
-          <div className="absolute top-3 left-3 bg-[#c4ff00]/90 backdrop-blur-sm text-black text-[10px] font-bold px-2 py-1 rounded-full shadow-lg border border-[#c4ff00]/50">
+          <div className="absolute top-3 left-3 bg-[#c4ff00] text-black text-[10px] font-bold px-2 py-1 rounded-full shadow-lg border border-black/5">
             Recommended
           </div>
         )}
         {isClosed && (
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
             <span className="bg-red-500 text-white font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wide shadow-lg">Closed</span>
           </div>
         )}
@@ -61,19 +61,19 @@ export function MenuItemCard({ item, isClosed = false, onClick, onRestaurantClic
         {item.restaurant_name && (
           <div 
             onClick={(e) => { if (onRestaurantClick) { e.stopPropagation(); onRestaurantClick(item.restaurant_name); } }}
-            className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 mb-1.5 bg-gray-800/50 w-fit px-2 py-0.5 rounded-lg hover:bg-gray-800 transition-colors"
+            className="flex items-center gap-1.5 text-[10px] font-medium text-gray-500 mb-1.5 bg-gray-100 w-fit px-2 py-0.5 rounded-lg hover:bg-gray-200 transition-colors"
           >
             <Store className="w-3 h-3" /><span className="truncate max-w-[100px]">{item.restaurant_name}</span>
           </div>
         )}
 
-        <h3 className="font-bold text-white mb-1 line-clamp-2 leading-tight text-[15px]">{item.name}</h3>
+        <h3 className="font-bold text-gray-900 mb-1 line-clamp-2 leading-tight text-[15px]">{item.name}</h3>
         
         <div className="mt-auto pt-4 flex items-center justify-between gap-3">
-          <p className="text-[#c4ff00] font-bold text-lg">₹{item.price}</p>
+          <p className="text-black font-bold text-lg">₹{item.price}</p>
 
           {isClosed ? (
-            <button disabled className="bg-[#252525] text-gray-500 p-2 rounded-xl cursor-not-allowed">
+            <button disabled className="bg-gray-100 text-gray-400 p-2 rounded-xl cursor-not-allowed">
               <Lock className="w-5 h-5" />
             </button>
           ) : quantity === 0 ? (
@@ -84,10 +84,10 @@ export function MenuItemCard({ item, isClosed = false, onClick, onRestaurantClic
               Add
             </button>
           ) : (
-            <div onClick={(e) => e.stopPropagation()} className="flex items-center bg-[#252525] text-white rounded-xl border border-gray-700 overflow-hidden">
-              <button onClick={() => updateQuantity(item.id, quantity - 1)} className="p-2 hover:text-[#c4ff00] transition-colors active:bg-white/10"><Minus className="w-4 h-4" /></button>
+            <div onClick={(e) => e.stopPropagation()} className="flex items-center bg-white text-gray-900 rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+              <button onClick={() => updateQuantity(item.id, quantity - 1)} className="p-2 hover:bg-gray-50 transition-colors active:bg-gray-100"><Minus className="w-4 h-4" /></button>
               <span className="font-bold text-sm w-4 text-center">{quantity}</span>
-              <button onClick={() => updateQuantity(item.id, quantity + 1)} className="p-2 hover:text-[#c4ff00] transition-colors active:bg-white/10"><Plus className="w-4 h-4" /></button>
+              <button onClick={() => updateQuantity(item.id, quantity + 1)} className="p-2 hover:bg-gray-50 transition-colors active:bg-gray-100"><Plus className="w-4 h-4" /></button>
             </div>
           )}
         </div>
