@@ -7,6 +7,7 @@ export interface Database {
           name: string;
           icon: string;
           sort_order: number;
+          section: string; // <--- NEW FIELD
           created_at: string;
         };
         Insert: Omit<Database['public']['Tables']['categories']['Row'], 'id' | 'created_at'>;
